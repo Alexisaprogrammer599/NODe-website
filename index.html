@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>NODe Game Downloads</title>
+
+<style>
+    body { font-family: Arial; background:#111; color:#eee; margin:0; padding:0; }
+    header { background:#1b1b1b; padding:20px; text-align:center; border-bottom:2px solid #333; }
+    h1 { margin:0; font-size:32px; }
+    .subtitle { color:#aaa; font-size:14px; margin-top:5px; }
+
+    .container { width:90%; max-width:900px; margin:25px auto; }
+
+    .btn { 
+        background:#2d72d9; padding:10px 16px; border-radius:6px;
+        color:white; text-decoration:none; display:inline-block; margin-top:10px;
+    }
+    .btn:hover { background:#1b56a3; }
+
+    .upload-box, .game-card {
+        background:#1e1e1e; padding:16px; border-radius:10px; border:1px solid #333; margin-bottom:22px;
+    }
+
+    .file-input { margin-top:15px; }
+    .game-card h2 { margin:0; font-size:22px; }
+    .game-card p { margin:8px 0 12px 0; color:#ccc; }
+
+    .download-btn {
+        padding:10px 14px; border-radius:6px; background:#00a8ff; color:white;
+        text-decoration:none; font-weight:bold;
+    }
+    .download-btn:hover { background:#007acc; }
+
+</style>
+</head>
+
+<body>
+<header>
+    <h1>NODe Downloads</h1>
+    <div class="subtitle">Runtime 0.1 Pre-Alpha • Upload & Share Games</div>
+
+    <!-- LOGIN BUTTON -->
+    <a class="btn" id="loginBtn" href="#">Login With GitHub</a>
+    <span id="user"></span>
+</header>
+
+<div class="container">
+
+    <!-- UPLOAD AREA -->
+    <div class="upload-box" id="upload-section" style="display:none;">
+        <h2>Upload a NODe Game (.nrf)</h2>
+        <input id="fileInput" class="file-input" type="file" accept=".nrf,.zip">
+        <br><br>
+        <button class="btn" onclick="uploadFile()">Upload</button>
+    </div>
+
+    <h2>Available Downloads</h2>
+    <div id="games"></div>
+
+</div>
+
+<script>
+// CONFIG -------------------------
+const CLIENT_ID = "YOUR_CLIENT_ID"; // from GitHub OAuth App
+const USERNAME = "YOUR_GITHUB_USERNAME";
+const REPO = "YOUR_REPO_NAME";
+const BRANCH = "main"; // or "master"
+// ---------------------------------
+
+// Generate GitHub OAuth URL
+document.getElementById("loginBtn").href =
+    `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo`;
+
+// Retrieve access_token from URL (after GitHub redirects back)
+const code = new URLSearchParams(window.location.search).get("code");
+
+// Step 1: Exchange code for token (through GitHub server)
+if (code) {
+    fetchAccessToken(code);
+}
+
+function fetchAccessToken(code) {
+    // GitHub requires a POST from server-side,
+    // but GitHub allows CORS free requests to https://github.com/login/oauth/access_token
+    fetch(`https://github.com/login/oauth/access_token?client_id=${CLIENT_ID}&client_secret=YOUR_CLIENT_SECRET&code=${code}`,
+        { method: "POST", headers: { "Accept": "application/json" } }
+    )
+    .then(r => r.json())
+    .then(data => {
+        if (data.access_token) {
+            localStorage.setItem("token", data.access_token);
+            document.getElementById("loginBtn").style.display = "none";
+            document.getElementById("user").innerText = "Logged In";
+            document.getElementById("upload-section").style.display = "block";
+        }
+    });
+}
+
+// Load token if already logged in
+const token = localStorage.getItem("token");
+if (token) {
+    document.getElementById("loginBtn").style.display = "none";
+    document.getElementById("user").innerText = "Logged In";
+    document.getElementById("upload-section").style.display = "block";
+}
+
+// Upload file directly to repo
+function uploadFile() {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) { alert("Pick a file first."); return; }
+
+    let reader = new FileReader();
+    reader.onload = function() {
+        const content = btoa(reader.result);
+        const path = `games/${file.name}`;
+
+        fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/${path}`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `token ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message: `Upload ${file.name}`,
+                content: content
+            })
+        })
+        .then(r => r.json())
+        .then(res => {
+            alert("Uploaded!");
+            loadGames();
+        });
+    }
+    reader.readAsBinaryString(file);
+}
+
+// Load files from /games folder
+function loadGames() {
+    fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/games`)
+        .then(r => r.json())
+        .then(files => {
+            const div = document.getElementById("games");
+            div.innerHTML = "";
+            files.forEach(f => {
+                div.innerHTML += `
+                    <div class="game-card">
+                        <h2>${f.name}</h2>
+                        <p>NODe Game Package</p>
+                        <a class="download-btn" href="${f.download_url}">Download</a>
+                    </div>
+                `;
+            });
+        });
+}
+
+loadGames();
+</script>
+
+</body>
+</html>
