@@ -1,5 +1,5 @@
 // ---------------------------------------------------------
-// NODe Hub - app.js
+// NODe Hub - app.js (with edit/delete + players browse)
 // ---------------------------------------------------------
 
 // ---------- Supabase Init ----------
@@ -13,6 +13,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const pages = {
   home: document.getElementById("page-home"),
   browse: document.getElementById("page-browse"),
+  players: document.getElementById("page-players"),
   create: document.getElementById("page-create"),
   play: document.getElementById("page-play"),
   account: document.getElementById("page-account"),
@@ -28,6 +29,10 @@ const browseGrid = document.getElementById("browseGrid");
 const prevPageBtn = document.getElementById("prevPage");
 const nextPageBtn = document.getElementById("nextPage");
 const pageNumberEl = document.getElementById("pageNumber");
+
+// Players page
+const playerSearch = document.getElementById("playerSearch");
+const playersGrid = document.getElementById("playersGrid");
 
 // Create page
 const createPanel = document.getElementById("createPanel");
@@ -82,8 +87,9 @@ const authError = document.getElementById("authError");
 
 // ---------- Global State ----------
 let currentUser = null;
-let authMode = "signin"; // 'signin' or 'signup'
+let authMode = "signin";
 let currentGameId = null;
+let currentGameData = null;
 
 // Browse state
 const PAGE_SIZE = 12;
@@ -91,6 +97,9 @@ let currentBrowsePage = 1;
 let totalBrowseCount = 0;
 let currentSearch = "";
 let currentRatingFilter = "";
+
+// Players state
+let currentPlayerSearch = "";
 
 // ---------- Page Navigation ----------
 function showPage(name) {
@@ -103,13 +112,11 @@ navButtons.forEach(btn => {
   btn.addEventListener("click", () => {
     const target = btn.dataset.open;
     showPage(target);
-    if (target === "browse") {
-      loadBrowsePage();
-    }
+    if (target === "browse") loadBrowsePage();
+    if (target === "players") loadPlayersPage();
   });
 });
 
-// Default page
 showPage("home");
 
 // ---------- Auth Modal ----------
@@ -197,10 +204,8 @@ async function refreshAuthUI() {
       <button class="btn" id="btnSignUp">Sign Up</button>
       <button class="btn primary" id="btnSignIn">Sign In</button>
     `;
-    const btnSignUp = document.getElementById("btnSignUp");
-    const btnSignIn = document.getElementById("btnSignIn");
-    btnSignUp.onclick = () => openAuthModal("signup");
-    btnSignIn.onclick = () => openAuthModal("signin");
+    document.getElementById("btnSignUp").onclick = () => openAuthModal("signup");
+    document.getElementById("btnSignIn").onclick = () => openAuthModal("signin");
 
     createPanel.style.display = "none";
     createNotLogged.style.display = "block";
@@ -224,17 +229,17 @@ async function refreshAuthUI() {
     createPanel.style.display = "block";
     createNotLogged.style.display = "none";
 
-    const { data: profile, error: pErr } = await sb
+    const { data: profile } = await sb
       .from("profiles")
       .select("*")
       .eq("id", currentUser.id)
       .maybeSingle();
 
-    const username = profile?.username || "(no username set)";
+    const username = profile?.username || currentUser.email.split("@")[0];
     const bio = profile?.bio || "";
     accountInfo.innerHTML = `
       <p><b>Email:</b> ${currentUser.email}</p>
-      <p><b>Username:</b> ${username}</p>
+      <p><b>Username:</b> ${escapeHtml(username)}</p>
     `;
     usernameInput.value = profile?.username || "";
     usernameArea.style.display = "block";
@@ -244,13 +249,12 @@ async function refreshAuthUI() {
   }
 }
 
-// Setup auth listener on startup
 sb.auth.onAuthStateChange(() => {
   refreshAuthUI();
 });
 refreshAuthUI();
 
-// ---------- Account Actions (username, bio, avatar) ----------
+// ---------- Account Actions ----------
 saveUsernameBtn.addEventListener("click", async () => {
   if (!currentUser) return;
   const newName = usernameInput.value.trim();
@@ -321,7 +325,7 @@ uploadAvatarBtn.addEventListener("click", async () => {
   avatarStatus.textContent = "Avatar uploaded!";
 });
 
-// ---------- Create Game (upload) ----------
+// ---------- Create Game ----------
 uploadGameBtn.addEventListener("click", async () => {
   uploadGameStatus.textContent = "";
 
@@ -334,7 +338,6 @@ uploadGameBtn.addEventListener("click", async () => {
   const desc = gameDesc.value.trim();
   const tags = gameTags.value.trim();
   const rating = gameRating.value;
-
   const coverFile = coverInput.files[0];
   const nrfFile = nrfInput.files[0];
   const screens = screensInput.files;
@@ -350,7 +353,6 @@ uploadGameBtn.addEventListener("click", async () => {
   }
 
   uploadGameStatus.textContent = "Uploading cover...";
-
   const coverPath = `covers/${currentUser.id}_${Date.now()}_${coverFile.name}`;
   const { error: coverErr } = await sb.storage
     .from("game-assets")
@@ -377,7 +379,7 @@ uploadGameBtn.addEventListener("click", async () => {
     .select("*")
     .eq("id", currentUser.id)
     .maybeSingle();
-  const uname = profile?.username || "UnknownDev";
+  const uname = profile?.username || currentUser.email.split("@")[0] || "Unknown";
 
   uploadGameStatus.textContent = "Saving game metadata...";
 
@@ -490,6 +492,11 @@ async function loadBrowsePage() {
       .select("*", { count: "exact", head: true })
       .eq("game_id", g.id);
 
+    const devName =
+      g.uploader_username ||
+      (g.uploader_email ? g.uploader_email.split("@")[0] : "") ||
+      "Unknown";
+
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -500,7 +507,7 @@ async function loadBrowsePage() {
         <div class="title">${escapeHtml(g.title)}</div>
         <div class="desc">by 
           <a href="javascript:void(0)" data-dev="${g.uploader}" class="dev-link">
-            ${escapeHtml(g.uploader_username || "UnknownDev")}
+            ${escapeHtml(devName)}
           </a>
         </div>
         <div class="small">Rating: ${g.age_rating || "N/A"} | Likes: ${likeCount}</div>
@@ -551,9 +558,75 @@ ratingFilter.addEventListener("change", () => {
   loadBrowsePage();
 });
 
-// ---------- Game Detail Overlay ----------
+// ---------- Players Page ----------
+async function loadPlayersPage() {
+  let q = sb.from("profiles").select("*").order("created_at", { ascending: false });
+  if (currentPlayerSearch) {
+    q = q.ilike("username", `%${currentPlayerSearch}%`);
+  }
+
+  const { data, error } = await q.limit(50);
+  if (error) {
+    playersGrid.innerHTML = `<div class="small error">Failed to load players.</div>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    playersGrid.innerHTML = `<div class="small">No players found.</div>`;
+    return;
+  }
+
+  playersGrid.innerHTML = "";
+
+  for (const p of data) {
+    let avatarUrl = "";
+    if (p.avatar_path) {
+      const { data: aPub } = sb.storage
+        .from("profile-avatars")
+        .getPublicUrl(p.avatar_path);
+      avatarUrl = aPub.publicUrl;
+    }
+
+    const { data: games } = await sb
+      .from("games")
+      .select("id")
+      .eq("uploader", p.id);
+
+    const gameCount = games ? games.length : 0;
+    const uname = p.username || "(no username)";
+
+    const card = document.createElement("div");
+    card.className = "player-card";
+    card.innerHTML = `
+      ${avatarUrl ? `<img class="avatar" src="${avatarUrl}" alt="avatar">` : ""}
+      <div class="meta">
+        <div class="title">${escapeHtml(uname)}</div>
+        <div class="small">Games: ${gameCount}</div>
+        <button class="btn" data-profile="${p.id}">View Profile</button>
+      </div>
+    `;
+    playersGrid.appendChild(card);
+  }
+
+  playersGrid.querySelectorAll("button[data-profile]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const uid = btn.getAttribute("data-profile");
+      openProfileOverlay(uid);
+    });
+  });
+}
+
+if (playerSearch) {
+  playerSearch.addEventListener("input", () => {
+    currentPlayerSearch = playerSearch.value.trim();
+    loadPlayersPage();
+  });
+}
+
+// ---------- Game Detail Overlay + Edit/Delete ----------
 async function openGameOverlay(gameId) {
   currentGameId = gameId;
+  currentGameData = null;
   gameDetail.innerHTML = "Loading...";
   screenshotGallery.innerHTML = "";
   versionList.innerHTML = "";
@@ -570,6 +643,8 @@ async function openGameOverlay(gameId) {
     gameDetail.innerHTML = `<div class="small error">Failed to load game.</div>`;
     return;
   }
+
+  currentGameData = game;
 
   let coverUrl = "";
   if (game.cover_path) {
@@ -595,12 +670,25 @@ async function openGameOverlay(gameId) {
   }
 
   const devId = game.uploader;
-  const devName = game.uploader_username || "UnknownDev";
+  const devName =
+    game.uploader_username ||
+    (game.uploader_email ? game.uploader_email.split("@")[0] : "") ||
+    "Unknown";
 
   const { data: nrfPub } = sb.storage
     .from("games")
     .getPublicUrl(game.storage_path);
   const gameUrl = nrfPub.publicUrl;
+
+  const isOwner = currentUser && currentUser.id === game.uploader;
+  const ownerControlsHtml = isOwner
+    ? `
+      <div style="margin-top:10px;">
+        <button id="editGameBtn" class="btn">Edit Game</button>
+        <button id="deleteGameBtn" class="btn">Delete Game</button>
+      </div>
+    `
+    : "";
 
   gameDetail.innerHTML = `
     <h2>${escapeHtml(game.title)}</h2>
@@ -617,6 +705,7 @@ async function openGameOverlay(gameId) {
     <p><b>Likes:</b> <span id="likeCount">${likeCount}</span></p>
     <button id="likeBtn" class="btn">${userLiked ? "Liked" : "Like"}</button>
     <a class="btn primary" href="${gameUrl}" download>Download Game</a>
+    ${ownerControlsHtml}
   `;
 
   const devLink = gameDetail.querySelector(".dev-link");
@@ -626,33 +715,35 @@ async function openGameOverlay(gameId) {
 
   const likeBtn = document.getElementById("likeBtn");
   const likeCountEl = document.getElementById("likeCount");
-
   likeBtn.addEventListener("click", async () => {
     if (!currentUser) {
       alert("Sign in to like games.");
       return;
     }
-
     if (likeBtn.textContent === "Liked") {
       alert("You already liked this game.");
       return;
     }
-
     const { error: likeErr } = await sb.from("game_likes").insert([{
       game_id: game.id,
       user_id: currentUser.id
     }]);
-
     if (likeErr) {
       console.error(likeErr);
       alert("Failed to like game.");
       return;
     }
-
     const newCount = (parseInt(likeCountEl.textContent, 10) || 0) + 1;
     likeCountEl.textContent = String(newCount);
     likeBtn.textContent = "Liked";
   });
+
+  if (isOwner) {
+    const editBtn = document.getElementById("editGameBtn");
+    const deleteBtn = document.getElementById("deleteGameBtn");
+    editBtn.addEventListener("click", () => showEditGameForm());
+    deleteBtn.addEventListener("click", () => deleteCurrentGame());
+  }
 
   const { data: shots } = await sb
     .from("game_screenshots")
@@ -709,7 +800,210 @@ async function openGameOverlay(gameId) {
 closeOverlayBtn.addEventListener("click", () => {
   gameOverlay.style.display = "none";
   currentGameId = null;
+  currentGameData = null;
 });
+
+// ---------- Edit Game Form ----------
+function showEditGameForm() {
+  if (!currentUser || !currentGameData) return;
+  if (currentUser.id !== currentGameData.uploader) return;
+
+  let existing = document.getElementById("editGameForm");
+  if (existing) {
+    existing.scrollIntoView({ behavior: "smooth" });
+    return;
+  }
+
+  const form = document.createElement("div");
+  form.id = "editGameForm";
+  form.innerHTML = `
+    <h3>Edit Game Info</h3>
+    <div class="form-row">
+      <label>Title</label>
+      <input id="editTitle" class="input" value="${escapeHtml(currentGameData.title || "")}">
+    </div>
+    <div class="form-row">
+      <label>Description</label>
+      <textarea id="editDesc" class="input" rows="3">${escapeHtml(currentGameData.description || "")}</textarea>
+    </div>
+    <div class="form-row">
+      <label>Tags</label>
+      <input id="editTags" class="input" value="${escapeHtml(currentGameData.tags || "")}">
+    </div>
+    <div class="form-row">
+      <label>Age Rating</label>
+      <select id="editRating" class="input">
+        <option value="9+">9+</option>
+        <option value="12+">12+</option>
+        <option value="16+">16+</option>
+        <option value="18+">18+</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Replace Cover (optional)</label>
+      <input id="editCover" type="file" accept="image/*">
+    </div>
+    <div class="form-row">
+      <label>Add Screenshots (optional, multiple)</label>
+      <input id="editScreens" type="file" accept="image/*" multiple>
+    </div>
+    <button id="saveGameBtn" class="btn primary">Save Changes</button>
+
+    <h3 style="margin-top:15px;">Add New Version</h3>
+    <div class="form-row">
+      <label>Version Label</label>
+      <input id="editVersionLabel" class="input" placeholder="e.g. 1.1">
+    </div>
+    <div class="form-row">
+      <label>Version Notes</label>
+      <textarea id="editVersionNotes" class="input" rows="3" placeholder="What changed?"></textarea>
+    </div>
+    <div class="form-row">
+      <label>Version File</label>
+      <input id="editVersionFile" type="file">
+    </div>
+    <button id="addVersionBtn" class="btn">Add Version</button>
+    <div id="editGameStatus" class="small"></div>
+  `;
+  gameDetail.appendChild(form);
+
+  document.getElementById("editRating").value = currentGameData.age_rating || "12+";
+  document.getElementById("saveGameBtn").onclick = saveGameEdits;
+  document.getElementById("addVersionBtn").onclick = addNewVersionForCurrentGame;
+}
+
+async function saveGameEdits() {
+  const statusEl = document.getElementById("editGameStatus");
+  if (!currentUser || !currentGameData) return;
+  if (currentUser.id !== currentGameData.uploader) {
+    statusEl.textContent = "You can only edit your own game.";
+    return;
+  }
+
+  const title = document.getElementById("editTitle").value.trim();
+  const desc = document.getElementById("editDesc").value.trim();
+  const tags = document.getElementById("editTags").value.trim();
+  const rating = document.getElementById("editRating").value;
+  const coverFile = document.getElementById("editCover").files[0];
+  const screensFiles = document.getElementById("editScreens").files;
+
+  if (!title || !desc || !tags || !rating) {
+    statusEl.textContent = "Please fill in all fields.";
+    return;
+  }
+
+  let updateData = { title, description: desc, tags, age_rating: rating };
+
+  if (coverFile) {
+    statusEl.textContent = "Uploading new cover...";
+    const newCoverPath = `covers/${currentUser.id}_${Date.now()}_${coverFile.name}`;
+    const { error: upErr } = await sb.storage
+      .from("game-assets")
+      .upload(newCoverPath, coverFile);
+    if (upErr) {
+      statusEl.textContent = "Cover upload failed: " + upErr.message;
+      return;
+    }
+    updateData.cover_path = newCoverPath;
+  }
+
+  if (screensFiles && screensFiles.length > 0) {
+    statusEl.textContent = "Uploading new screenshots...";
+    for (let i = 0; i < screensFiles.length; i++) {
+      const sf = screensFiles[i];
+      const sPath = `screens/${currentGameData.id}_${Date.now()}_${i}_${sf.name}`;
+      const { error: sErr } = await sb.storage
+        .from("game-assets")
+        .upload(sPath, sf);
+      if (!sErr) {
+        await sb.from("game_screenshots").insert([{ game_id: currentGameData.id, storage_path: sPath }]);
+      }
+    }
+  }
+
+  statusEl.textContent = "Saving changes...";
+  const { error } = await sb
+    .from("games")
+    .update(updateData)
+    .eq("id", currentGameData.id)
+    .eq("uploader", currentUser.id);
+
+  if (error) {
+    statusEl.textContent = "Save failed: " + error.message;
+    return;
+  }
+
+  statusEl.textContent = "Saved!";
+  await openGameOverlay(currentGameData.id);
+}
+
+async function addNewVersionForCurrentGame() {
+  const statusEl = document.getElementById("editGameStatus");
+  if (!currentUser || !currentGameData) return;
+  if (currentUser.id !== currentGameData.uploader) {
+    statusEl.textContent = "You can only add versions to your own game.";
+    return;
+  }
+
+  const label = document.getElementById("editVersionLabel").value.trim() || "New version";
+  const notes = document.getElementById("editVersionNotes").value.trim();
+  const file = document.getElementById("editVersionFile").files[0];
+
+  if (!file) {
+    statusEl.textContent = "Pick a file for the new version.";
+    return;
+  }
+
+  statusEl.textContent = "Uploading new version file...";
+  const path = `games/${currentUser.id}_${Date.now()}_${file.name}`;
+  const { error: upErr } = await sb.storage.from("games").upload(path, file);
+  if (upErr) {
+    statusEl.textContent = "Version upload failed: " + upErr.message;
+    return;
+  }
+
+  const { error } = await sb.from("game_versions").insert([{
+    game_id: currentGameData.id,
+    version_label: label,
+    notes,
+    storage_path: path
+  }]);
+
+  if (error) {
+    statusEl.textContent = "Saving version failed: " + error.message;
+    return;
+  }
+
+  statusEl.textContent = "New version added!";
+  document.getElementById("editVersionFile").value = "";
+  await openGameOverlay(currentGameData.id);
+}
+
+async function deleteCurrentGame() {
+  if (!currentUser || !currentGameData) return;
+  if (currentUser.id !== currentGameData.uploader) {
+    alert("You can only delete your own game.");
+    return;
+  }
+  if (!confirm("Delete this game? This cannot be undone.")) return;
+
+  const { error } = await sb
+    .from("games")
+    .delete()
+    .eq("id", currentGameData.id)
+    .eq("uploader", currentUser.id);
+
+  if (error) {
+    alert("Delete failed: " + error.message);
+    return;
+  }
+
+  alert("Game deleted.");
+  gameOverlay.style.display = "none";
+  currentGameId = null;
+  currentGameData = null;
+  await loadBrowsePage();
+}
 
 // ---------- Comments ----------
 async function loadComments(gameId) {
@@ -854,5 +1148,5 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-// ---------- Initial Browse Load ----------
+// ---------- Initial Loads ----------
 loadBrowsePage();
