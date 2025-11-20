@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>NODe Hub — Supabase Auth + Storage</title>
 
-  <!-- Load Supabase JS (UMD) FIRST -->
+  <!-- Load Supabase FIRST -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <!-- Load JSZip for local zip validation -->
+
+  <!-- Load JSZip (not used now, but you may use it later) -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <link rel="stylesheet" href="game.css">
@@ -28,23 +29,19 @@
 <main class="page">
   <section class="hero">
     <h1>NODe — Upload & Share</h1>
-    <p>Sign up or sign in to upload your adventure packages (.nrf). Files are validated in your browser before upload.</p>
+    <p>Sign up or sign in to upload your adventure packages (.nrf).</p>
   </section>
 
   <section class="upload-panel" id="uploadPanel" style="display:none;">
-    <h2>Upload a game</h2>
-    <div class="form-row">
-      <label class="small">Select .nrf or .zip</label>
-      <input type="file" id="fileInput" accept=".nrf,.zip" />
-    </div>
+    <h2>Upload a Game</h2>
 
     <div class="form-row">
-      <label class="small">Title (optional — extracted from GameInfo if present)</label>
-      <input id="titleInput" class="input" placeholder="Game Title (optional)">
+      <label class="small">Select a .nrf file</label>
+      <input type="file" id="fileInput" accept=".nrf" />
     </div>
 
     <div style="display:flex;gap:8px;align-items:center">
-      <button id="uploadBtn" class="btn primary">Validate & Upload</button>
+      <button id="uploadBtn" class="btn primary">Upload</button>
       <span id="uploadStatus" class="small"></span>
     </div>
 
@@ -57,9 +54,9 @@
   </section>
 </main>
 
-<footer class="foot">© NODe — Supabase edition</footer>
+<footer class="foot">© NODe — Supabase Edition</footer>
 
-<!-- Auth modal -->
+<!-- Auth Modal -->
 <div id="modal" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
   <div style="background:white;padding:18px;border-radius:8px;max-width:420px;width:90%;">
     <h3 id="modalTitle">Sign In</h3>
@@ -76,15 +73,15 @@
 </div>
 
 <script>
-// ---------- CONFIG: your Supabase project ----------
+// ------- SUPABASE CONFIG -------
 const SUPABASE_URL = "https://rowzonuulxhiefncbwnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U";
-// --------------------------------------------------
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U";
 
-// create client WITHOUT shadowing the global
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// --------------------------------
 
-// UI elements
+// Elements
 const authArea = document.getElementById("authArea");
 const btnSignUp = document.getElementById("btnSignUp");
 const btnSignIn = document.getElementById("btnSignIn");
@@ -101,274 +98,197 @@ const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const uploadStatus = document.getElementById("uploadStatus");
 const preview = document.getElementById("preview");
-const titleInput = document.getElementById("titleInput");
-
 const gamesGrid = document.getElementById("gamesGrid");
 
-// Modal state
 let modalMode = "signin";
 
 function showModal(mode) {
   modalMode = mode;
   modalTitle.innerText = mode === "signin" ? "Sign In" : "Sign Up";
   modalSubmit.innerText = mode === "signin" ? "Sign In" : "Create Account";
-  modalMsg.innerText = "";
   emailIn.value = "";
   passIn.value = "";
+  modalMsg.innerText = "";
   modal.style.display = "flex";
 }
-function hideModal() {
-  modal.style.display = "none";
-}
+function hideModal() { modal.style.display = "none"; }
 
-// Attach button handlers
 btnSignUp.onclick = () => showModal("signup");
 btnSignIn.onclick = () => showModal("signin");
 modalCancel.onclick = hideModal;
 
-// Sign up / sign in
+// ---------- AUTH WITHOUT EMAIL VERIFICATION ----------
 modalSubmit.onclick = async () => {
   modalMsg.innerText = "";
   const email = emailIn.value.trim();
   const pass = passIn.value;
+
   if (!email || !pass) {
-    modalMsg.innerText = "Email and password required";
+    modalMsg.innerText = "Email and password required.";
     return;
   }
 
   try {
     if (modalMode === "signup") {
-      const { data, error } = await sb.auth.signUp({ email, password: pass });
-      if (error) {
-        modalMsg.innerText = error.message;
-        return;
-      }
-      modalMsg.innerText = "Sign-up success. Check your email to confirm (if enabled).";
-    } else {
-      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-      if (error) {
-        modalMsg.innerText = error.message;
-        return;
-      }
+
+      // SIGN UP WITHOUT EMAIL CONFIRMATION
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password: pass,
+        options: { emailRedirectTo: undefined }
+      });
+
+      if (error) { modalMsg.innerText = error.message; return; }
+
+      // auto login after signup
+      const { error: loginErr } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (loginErr) { modalMsg.innerText = loginErr.message; return; }
+
       hideModal();
-      await onAuthChange();
+      onAuthChange();
+
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) { modalMsg.innerText = error.message; return; }
+
+      hideModal();
+      onAuthChange();
     }
   } catch (e) {
     modalMsg.innerText = e.message || "Auth error";
   }
 };
+// -----------------------------------------------------
 
-// Handle auth state
+// Update Auth UI
 async function onAuthChange() {
   const { data: sessionData } = await sb.auth.getSession();
-  const session = sessionData?.session || null;
-  const userResp = await sb.auth.getUser();
-  const user = userResp.data?.user || session?.user || null;
+  const user = sessionData?.session?.user;
 
   if (user) {
-    authArea.innerHTML = `<div class="small">Signed in: ${user.email}</div>
-                          <button id="btnSignOut" class="btn">Sign out</button>`;
+    authArea.innerHTML = `
+      <div class="small">Signed in: ${user.email}</div>
+      <button id="btnSignOut" class="btn">Sign out</button>
+    `;
     document.getElementById("btnSignOut").onclick = async () => {
       await sb.auth.signOut();
-      window.location.reload();
+      location.reload();
     };
     uploadPanel.style.display = "block";
   } else {
-    authArea.innerHTML = `<button id="btnSignUp" class="btn">Sign up</button>
-                          <button id="btnSignIn" class="btn primary">Sign in</button>`;
+    uploadPanel.style.display = "none";
+    authArea.innerHTML = `
+      <button id="btnSignUp" class="btn">Sign up</button>
+      <button id="btnSignIn" class="btn primary">Sign in</button>
+    `;
     document.getElementById("btnSignUp").onclick = () => showModal("signup");
     document.getElementById("btnSignIn").onclick = () => showModal("signin");
-    uploadPanel.style.display = "none";
   }
 }
 
-// initial auth check
 onAuthChange();
-// react to changes
-sb.auth.onAuthStateChange((_event, _session) => {
-  onAuthChange();
-});
+sb.auth.onAuthStateChange(() => onAuthChange());
 
-// Validate Game.txt roughly
-function validateGameTxt(text) {
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const hasScene = lines.some(l => /^Scene\s+/i.test(l) || /^Ending\s+/i.test(l));
-  if (!hasScene) return { ok: false, error: "No Scene or Ending found in Game.txt" };
-
-  for (let i = 0; i < lines.length; i++) {
-    if (/^choice$/i.test(lines[i]) || /^choice\s+/i.test(lines[i])) {
-      let chunk = lines[i].replace(/^choice\s*/i, "");
-      let j = i + 1;
-      while (
-        j < lines.length &&
-        j < i + 6 &&
-        !/^(Scene|Ending|Background:|goto|quit|.+ says |.+ looks |pause|.+ gives )/i.test(lines[j])
-      ) {
-        chunk += " " + lines[j];
-        j++;
-      }
-      if (!/'[^']+'/.test(chunk)) {
-        return { ok: false, error: `Malformed choice block near line ${i + 1}. Missing quoted scene target.` };
-      }
-    }
-  }
-  return { ok: true };
-}
-
-// Parse GameInfo.txt
-function parseGameInfo(text) {
-  const info = {};
-  for (const line of text.split(/\r?\n/)) {
-    const idx = line.indexOf(":");
-    if (idx >= 0) {
-      const k = line.slice(0, idx).trim();
-      const v = line.slice(idx + 1).trim();
-      info[k] = v;
-    }
-  }
-  return info;
-}
-
-// Upload flow
+// -------------- SIMPLE NRF UPLOAD (NO VALIDATION) --------------
 uploadBtn.onclick = async () => {
   uploadStatus.textContent = "";
-  preview.innerText = "";
+  preview.innerHTML = "";
+
   const file = fileInput.files[0];
-  if (!file) {
-    uploadStatus.textContent = "Pick a file first.";
+  if (!file) { uploadStatus.textContent = "Pick a file."; return; }
+
+  if (!file.name.toLowerCase().endsWith(".nrf")) {
+    uploadStatus.textContent = "Only .nrf files allowed.";
     return;
   }
-  if (!/\.(nrf|zip)$/i.test(file.name)) {
-    uploadStatus.textContent = "File must be .nrf or .zip";
+
+  const { data: sessionData } = await sb.auth.getSession();
+  const user = sessionData?.session?.user;
+  if (!user) {
+    uploadStatus.textContent = "Not signed in.";
     return;
   }
 
-  uploadStatus.textContent = "Reading file...";
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const zip = await JSZip.loadAsync(arrayBuffer);
+  uploadStatus.textContent = "Uploading...";
 
-    const files = Object.keys(zip.files);
-    const giPath = files.find(p => p === "GameInfo.txt" || p.endsWith("/GameInfo.txt"));
-    const gtPath = files.find(p => p === "Game.txt" || p.endsWith("/Game.txt"));
+  const timestamp = Date.now();
+  const storagePath = `games/${user.id}/${timestamp}_${file.name}`;
 
-    if (!giPath || !gtPath) {
-      uploadStatus.textContent = "Archive must include GameInfo.txt and Game.txt";
-      return;
-    }
+  const { error: uploadError } =
+    await sb.storage.from("games").upload(storagePath, file);
 
-    const gameInfoStr = await zip.file(giPath).async("string");
-    const gameTxtStr = await zip.file(gtPath).async("string");
-
-    const info = parseGameInfo(gameInfoStr);
-    const required = ["Gamename", "Created By", "Version", "Runtime Version"];
-    for (const k of required) {
-      if (!info[k]) {
-        uploadStatus.textContent = `GameInfo.txt missing ${k}`;
-        return;
-      }
-    }
-
-    const gtv = validateGameTxt(gameTxtStr);
-    if (!gtv.ok) {
-      uploadStatus.textContent = `Game.txt error: ${gtv.error}`;
-      return;
-    }
-
-    preview.innerHTML = `<strong>${info.Gamename}</strong> by ${info["Created By"]} — v${info.Version}`;
-
-    uploadStatus.textContent = "Uploading to storage...";
-    const { data: sessionData } = await sb.auth.getSession();
-    const user = sessionData?.session?.user;
-    if (!user) {
-      uploadStatus.textContent = "Not authenticated.";
-      return;
-    }
-
-    const timestamp = Date.now();
-    const storagePath = `games/${user.id}/${timestamp}_${file.name}`;
-
-    const { data: uploadData, error: uploadError } = await sb.storage
-      .from("games")
-      .upload(storagePath, file, { cacheControl: "3600", upsert: false });
-
-    if (uploadError) {
-      uploadStatus.textContent = "Storage upload failed: " + uploadError.message;
-      console.error(uploadError);
-      return;
-    }
-
-    const { data: publicUrlData } = sb.storage.from("games").getPublicUrl(storagePath);
-    const publicURL = publicUrlData?.publicUrl || null;
-
-    uploadStatus.textContent = "Saving metadata...";
-    const { error: insertError } = await sb.from("games").insert([
-      {
-        title: info.Gamename,
-        description: info.Description || null,
-        filename: file.name,
-        storage_path: storagePath,
-        uploader: user.id,
-        uploader_email: user.email,
-        version: info.Version,
-        runtime_version: info["Runtime Version"]
-      }
-    ]);
-
-    if (insertError) {
-      uploadStatus.textContent = "DB insert failed: " + insertError.message;
-      console.error(insertError);
-      return;
-    }
-
-    uploadStatus.textContent = "Upload complete!";
-    preview.innerHTML += `<div class="success">Uploaded ✓</div>`;
-    loadGames();
-  } catch (e) {
-    console.error(e);
-    uploadStatus.textContent = "Error reading archive: " + e.message;
+  if (uploadError) {
+    uploadStatus.textContent = "Upload failed: " + uploadError.message;
+    return;
   }
+
+  // Get public URL
+  const { data: pub } = sb.storage.from("games").getPublicUrl(storagePath);
+
+  // Insert record in DB
+  const { error: insertError } = await sb.from("games").insert([{
+    title: file.name.replace(".nrf", ""),
+    description: "NODe Game",
+    filename: file.name,
+    storage_path: storagePath,
+    uploader: user.id,
+    uploader_email: user.email,
+    version: "N/A",
+    runtime_version: "0.1"
+  }]);
+
+  if (insertError) {
+    uploadStatus.textContent = "Database error: " + insertError.message;
+    return;
+  }
+
+  uploadStatus.textContent = "Upload complete!";
+  preview.innerHTML = `<strong>${file.name}</strong> uploaded successfully.`;
+
+  loadGames();
 };
+// ---------------------------------------------------------------
 
-// Load games listing
+// -------------- LOAD GAME LIST --------------
 async function loadGames() {
-  gamesGrid.innerHTML = "<div class='small'>Loading...</div>";
+  gamesGrid.innerHTML = "Loading...";
+
   const { data, error } = await sb
     .from("games")
-    .select("id, title, description, filename, storage_path, uploader_email, version, runtime_version, created_at")
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
-    gamesGrid.innerHTML = "<div class='note error'>Failed to load games.</div>";
-    console.error(error);
+    gamesGrid.innerHTML = "Failed to load games.";
     return;
   }
 
-  if (!data || data.length === 0) {
-    gamesGrid.innerHTML = "<div class='note'>No games yet.</div>";
+  if (!data.length) {
+    gamesGrid.innerHTML = "No games uploaded yet.";
     return;
   }
 
   gamesGrid.innerHTML = "";
   for (const g of data) {
-    const { data: publicUrlData } = sb.storage.from("games").getPublicUrl(g.storage_path);
-    const publicURL = publicUrlData?.publicUrl || "#";
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
+    const { data: pub } = sb.storage.from("games").getPublicUrl(g.storage_path);
+    const url = pub.publicUrl;
+
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
       <div class="thumb">📦</div>
       <div class="meta">
-        <div class="title">${g.title || g.filename}</div>
-        <div class="desc">${g.description || "NODe package"}</div>
-        <div class="small">by ${g.uploader_email || "unknown"} — v${g.version || "?"}</div>
-        <a class="dl" href="${publicURL}" target="_blank" rel="noopener">Download</a>
+        <div class="title">${g.title}</div>
+        <div class="desc">Uploaded by ${g.uploader_email}</div>
+        <a class="dl" href="${url}" download>Download</a>
       </div>
     `;
-    gamesGrid.appendChild(card);
+    gamesGrid.appendChild(el);
   }
 }
 loadGames();
-
+// -------------------------------------------------
 </script>
+
 </body>
 </html>
