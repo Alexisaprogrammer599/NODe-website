@@ -1,0 +1,34 @@
+/* game.css - OG Roblox 2010-ish theme */
+:root {
+  --bg: #dceaf9;
+  --panel: #eaf3ff;
+  --accent: #0b59a9;
+  --muted: #666;
+  --card: #fff;
+}
+html,body { height:100%; margin:0; font-family: Arial, Helvetica, sans-serif; background:var(--bg); color:#111; }
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  background: linear-gradient(#f6fbff,#dbeefc);
+  border-bottom:4px solid #a7d0f2; padding:12px 20px;
+}
+.brand { display:flex; align-items:flex-start; gap:14px; }
+#logo { font-weight:bold; font-size:22px; color:var(--accent); background:#fff; padding:8px 12px; border-radius:4px; box-shadow: 0 1px 0 rgba(0,0,0,0.06);}
+.subtitle { font-size:12px; color:var(--muted); margin-top:6px; }
+.actions { display:flex; align-items:center; gap:10px; }
+.btn { padding:8px 12px; background:#5aa0e6; color:white; text-decoration:none; border-radius:4px; box-shadow:0 1px 0 rgba(0,0,0,0.08); }
+.btn.primary { background: linear-gradient(#2e8be6,#0b59a9); border:1px solid #0b59a9; }
+
+.page { width:95%; max-width:1100px; margin:18px auto; }
+.hero { background:var(--panel); border:1px solid #cfe8ff; padding:20px; border-radius:6px; }
+.upload-panel { margin-top:16px; background:#fff; padding:12px; border:1px solid #cfe8ff; border-radius:6px; }
+.preview { margin-top:10px; font-size:14px; color:#333; }
+
+.grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:14px; margin-top:12px; }
+.card { background:var(--card); border:1px solid #d6eaf9; padding:8px; display:flex; gap:10px; border-radius:4px; align-items:center; }
+.thumb { width:64px; height:64px; background:linear-gradient(#f5f8ff,#ddefff); border:1px solid #cfe8ff; display:flex; align-items:center; justify-content:center; font-size:28px; border-radius:4px; }
+.meta { flex:1; }
+.title { font-weight:700; color:#0b59a9; }
+.desc { color:var(--muted); font-size:13px; margin-top:3px; }
+.dl { display:inline-block; margin-top:8px; padding:6px 10px; background:#0b59a9; color:white; border-radius:4px; text-decoration:none; }
+.foot { text-align:center; padding:18px; color:#666; margin-top:24px; font-size:13px; }
