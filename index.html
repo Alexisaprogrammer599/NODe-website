@@ -13,10 +13,10 @@
     .container { width:90%; max-width:900px; margin:25px auto; }
 
     .btn { 
-        background:#2d72d9; padding:10px 16px; border-radius:6px;
+        background:#0d6efd; padding:10px 16px; border-radius:6px;
         color:white; text-decoration:none; display:inline-block; margin-top:10px;
     }
-    .btn:hover { background:#1b56a3; }
+    .btn:hover { background:#0b5ed7; }
 
     .upload-box, .game-card {
         background:#1e1e1e; padding:16px; border-radius:10px; border:1px solid #333; margin-bottom:22px;
@@ -30,8 +30,6 @@
         padding:10px 14px; border-radius:6px; background:#00a8ff; color:white;
         text-decoration:none; font-weight:bold;
     }
-    .download-btn:hover { background:#007acc; }
-
 </style>
 </head>
 
@@ -40,14 +38,12 @@
     <h1>NODe Downloads</h1>
     <div class="subtitle">Runtime 0.1 Pre-Alpha • Upload & Share Games</div>
 
-    <!-- LOGIN BUTTON -->
-    <a class="btn" id="loginBtn" href="#">Login With GitHub</a>
+    <a class="btn" id="loginBtn">Login with GitHub</a>
     <span id="user"></span>
 </header>
 
 <div class="container">
 
-    <!-- UPLOAD AREA -->
     <div class="upload-box" id="upload-section" style="display:none;">
         <h2>Upload a NODe Game (.nrf)</h2>
         <input id="fileInput" class="file-input" type="file" accept=".nrf,.zip">
@@ -61,43 +57,25 @@
 </div>
 
 <script>
-// CONFIG -------------------------
-const CLIENT_ID = "Ov23li5lWi8G41RLWojz"; // from GitHub OAuth App
-const USERNAME = "Alexisaprogrammer599";
+const CLIENT_ID = "YOUR_CLIENT_ID";
+const USERNAME = "YOUR_GITHUB_USERNAME";
 const REPO = "NODe-website";
-const BRANCH = "main"; // or "master"
-// ---------------------------------
+const VERCEL_URL = "https://YOUR-VERCEL-PROJECT.vercel.app";
 
-// Generate GitHub OAuth URL
 document.getElementById("loginBtn").href =
     `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo`;
 
-// Retrieve access_token from URL (after GitHub redirects back)
 const code = new URLSearchParams(window.location.search).get("code");
 
-// Step 1: Exchange code for token (through GitHub server)
 if (code) {
-    fetchAccessToken(code);
-}
-
-function fetchAccessToken(code) {
-    // GitHub requires a POST from server-side,
-    // but GitHub allows CORS free requests to https://github.com/login/oauth/access_token
-    fetch(`https://github.com/login/oauth/access_token?client_id=${CLIENT_ID}&client_secret=YOUR_CLIENT_SECRET&code=${code}`,
-        { method: "POST", headers: { "Accept": "application/json" } }
-    )
+    fetch(`${VERCEL_URL}/api/auth?code=${code}`)
     .then(r => r.json())
     .then(data => {
-        if (data.access_token) {
-            localStorage.setItem("token", data.access_token);
-            document.getElementById("loginBtn").style.display = "none";
-            document.getElementById("user").innerText = "Logged In";
-            document.getElementById("upload-section").style.display = "block";
-        }
+        localStorage.setItem("token", data.access_token);
+        window.location = "index.html";
     });
 }
 
-// Load token if already logged in
 const token = localStorage.getItem("token");
 if (token) {
     document.getElementById("loginBtn").style.display = "none";
@@ -105,37 +83,32 @@ if (token) {
     document.getElementById("upload-section").style.display = "block";
 }
 
-// Upload file directly to repo
 function uploadFile() {
     const file = document.getElementById("fileInput").files[0];
-    if (!file) { alert("Pick a file first."); return; }
+    if (!file) return alert("No file chosen.");
 
-    let reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = function() {
         const content = btoa(reader.result);
-        const path = `games/${file.name}`;
-
-        fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/${path}`, {
-            method: "PUT",
-            headers: {
-                "Authorization": `token ${token}`,
-                "Content-Type": "application/json"
-            },
+        fetch(`${VERCEL_URL}/api/upload`, {
+            method: "POST",
             body: JSON.stringify({
-                message: `Upload ${file.name}`,
-                content: content
+                filename: file.name,
+                content: content,
+                token: token,
+                username: USERNAME,
+                repo: REPO
             })
         })
         .then(r => r.json())
-        .then(res => {
+        .then(() => {
             alert("Uploaded!");
             loadGames();
         });
-    }
+    };
     reader.readAsBinaryString(file);
 }
 
-// Load files from /games folder
 function loadGames() {
     fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/games`)
         .then(r => r.json())
@@ -146,7 +119,7 @@ function loadGames() {
                 div.innerHTML += `
                     <div class="game-card">
                         <h2>${f.name}</h2>
-                        <p>NODe Game Package</p>
+                        <p>NODe Game File</p>
                         <a class="download-btn" href="${f.download_url}">Download</a>
                     </div>
                 `;
