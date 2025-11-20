@@ -1,24 +1,127 @@
-// api/auth.js
+// api/upload.js
+import JSZip from "jszip";
+
 export default async function handler(req, res) {
-  const { code } = req.query;
-  if (!code) {
-    res.status(400).json({ error: "Missing ?code" });
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "POST only" });
     return;
   }
 
-  const params = new URLSearchParams();
-  params.append("client_id", process.env.GH_CLIENT_ID);
-  params.append("client_secret", process.env.GH_CLIENT_SECRET);
-  params.append("code", code);
+  try {
+    const { filename, content, token, username, repo } = req.body;
+    if (!filename || !content || !token || !username || !repo) {
+      res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
 
-  const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
-    method: "POST",
-    headers: { "Accept": "application/json" },
-    body: params
-  });
+    const ext = filename.split(".").pop().toLowerCase();
+    if (!["nrf","zip"].includes(ext)) {
+      res.status(400).json({ error: "Only .nrf or .zip allowed" });
+      return;
+    }
 
-  const tokenJson = await tokenRes.json();
+    const binary = Buffer.from(content, "base64");
+    const zip = await JSZip.loadAsync(binary).catch(e => null);
+    if (!zip) {
+      res.status(400).json({ error: "File is not a valid ZIP archive" });
+      return;
+    }
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.status(200).json(tokenJson);
+    const filesList = Object.keys(zip.files);
+    const hasGameInfo = filesList.some(p => p === "GameInfo.txt" || p.endsWith("/GameInfo.txt"));
+    const hasGameTxt = filesList.some(p => p === "Game.txt" || p.endsWith("/Game.txt"));
+
+    if (!hasGameInfo || !hasGameTxt) {
+      res.status(400).json({ error: "ZIP must contain GameInfo.txt and Game.txt at root or in folders." });
+      return;
+    }
+
+    const gameInfoPath = filesList.find(p => p === "GameInfo.txt" || p.endsWith("/GameInfo.txt"));
+    const gameTxtPath = filesList.find(p => p === "Game.txt" || p.endsWith("/Game.txt"));
+
+    const gameInfoStr = await zip.file(gameInfoPath).async("string");
+    const gameTxtStr = await zip.file(gameTxtPath).async("string");
+
+    const requiredKeys = ["Gamename", "Created By", "Version", "Runtime Version"];
+    const info = {};
+    for (const line of gameInfoStr.split(/\r?\n/)) {
+      const idx = line.indexOf(":");
+      if (idx >= 0) {
+        const k = line.slice(0, idx).trim();
+        const v = line.slice(idx+1).trim();
+        info[k] = v;
+      }
+    }
+    for (const k of requiredKeys) {
+      if (!info[k]) {
+        res.status(400).json({ error: `GameInfo.txt missing required key: ${k}` });
+        return;
+      }
+    }
+
+    const lines = gameTxtStr.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const hasScene = lines.some(l => /^Scene\s+/i.test(l) || /^Ending\s+/i.test(l));
+    if (!hasScene) {
+      res.status(400).json({ error: "Game.txt must contain at least one Scene or Ending block." });
+      return;
+    }
+
+    for (let i=0;i<lines.length;i++) {
+      if (/^choice$/i.test(lines[i]) || /^choice\s+/i.test(lines[i])) {
+        let chunk = "";
+        let j = i+1;
+        chunk += lines[i].replace(/^choice\s*/i,"");
+        while (j < lines.length && j < i+6 && !/^(Scene|Ending|Background:|goto|quit|.+ says |.+ looks |pause|.+ gives )/i.test(lines[j])) {
+          chunk += " " + lines[j];
+          j++;
+        }
+        if (!/'[^']+'/.test(chunk)) {
+          res.status(400).json({ error: `Malformed choice block near line ${i+1}. Choices must include a quoted target scene: e.g. Say hi 'Scene 2'`});
+          return;
+        }
+      }
+    }
+
+    const putUrl = `https://api.github.com/repos/${username}/${repo}/contents/games/${encodeURIComponent(filename)}`;
+
+    const putRes = await fetch(putUrl, {
+      method: "PUT",
+      headers: {
+        "Authorization": `token ${token}`,
+        "Content-Type": "application/json",
+        "User-Agent": "NODe-Uploader"
+      },
+      body: JSON.stringify({
+        message: `Upload ${filename}`,
+        content: content
+      })
+    });
+
+    const putJson = await putRes.json();
+    if (putRes.status >= 400) {
+      res.status(500).json({ error: "GitHub upload failed", detail: putJson });
+      return;
+    }
+
+    res.status(200).json({
+      ok: true,
+      metadata: {
+        Gamename: info["Gamename"],
+        CreatedBy: info["Created By"],
+        Version: info["Version"],
+        RuntimeVersion: info["Runtime Version"]
+      },
+      github: putJson
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Server error", detail: err.message });
+  }
 }
