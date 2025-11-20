@@ -3,13 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NODe Hub — Supabase Auth + Storage</title>
+  <title>NODe Hub</title>
 
-  <!-- Load Supabase FIRST -->
+  <!-- Supabase FIRST -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-  <!-- Load JSZip (not used now, but you may use it later) -->
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <link rel="stylesheet" href="game.css">
 </head>
@@ -21,78 +18,65 @@
     <div class="subtitle">Runtime 0.1 pre-alpha</div>
   </div>
   <div class="actions" id="authArea">
-    <button id="btnSignUp" class="btn">Sign up</button>
-    <button id="btnSignIn" class="btn primary">Sign in</button>
+    <!-- JavaScript will fill this -->
   </div>
 </header>
 
 <main class="page">
   <section class="hero">
-    <h1>NODe — Upload & Share</h1>
-    <p>Sign up or sign in to upload your adventure packages (.nrf).</p>
+    <h1>NODe Games</h1>
+    <p>Sign in to upload your .nrf games.</p>
   </section>
 
-  <section class="upload-panel" id="uploadPanel" style="display:none;">
-    <h2>Upload a Game</h2>
+  <section id="uploadPanel" class="upload-panel" style="display:none;">
+    <h2>Upload Game</h2>
 
-    <div class="form-row">
-      <label class="small">Select a .nrf file</label>
-      <input type="file" id="fileInput" accept=".nrf" />
-    </div>
+    <input type="file" id="fileInput" accept=".nrf">
 
-    <div style="display:flex;gap:8px;align-items:center">
-      <button id="uploadBtn" class="btn primary">Upload</button>
-      <span id="uploadStatus" class="small"></span>
-    </div>
+    <button id="uploadBtn" class="btn primary">Upload</button>
+    <span id="uploadStatus" class="small"></span>
 
     <div id="preview" class="preview"></div>
   </section>
 
   <section>
-    <h2>All Games</h2>
+    <h2>Games</h2>
     <div id="gamesGrid" class="grid"></div>
   </section>
 </main>
 
-<footer class="foot">© NODe — Supabase Edition</footer>
+<footer class="foot">© NODe Platform</footer>
 
-<!-- Auth Modal -->
-<div id="modal" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
-  <div style="background:white;padding:18px;border-radius:8px;max-width:420px;width:90%;">
+<!-- Sign In / Sign Up Modal -->
+<div id="modal"
+     style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;
+            background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
+  <div style="background:white;padding:20px;border-radius:6px;width:300px;">
     <h3 id="modalTitle">Sign In</h3>
-    <div>
-      <div class="form-row"><input id="email" class="input" type="email" placeholder="Email"></div>
-      <div class="form-row"><input id="password" class="input" type="password" placeholder="Password"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-        <button id="modalCancel" class="btn">Cancel</button>
-        <button id="modalSubmit" class="btn primary">Submit</button>
-      </div>
-      <div id="modalMsg" class="small error"></div>
+
+    <input id="email" class="input" type="email" placeholder="Email">
+    <input id="password" class="input" type="password" placeholder="Password">
+
+    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+      <button id="modalCancel" class="btn">Cancel</button>
+      <button id="modalSubmit" class="btn primary">OK</button>
     </div>
+
+    <div id="modalMsg" class="small error"></div>
   </div>
 </div>
 
 <script>
-// ------- SUPABASE CONFIG -------
+/* ------------------ CONFIG ------------------ */
 const SUPABASE_URL = "https://rowzonuulxhiefncbwnp.supabase.co";
-const SUPABASE_ANON_KEY =
+const SUPABASE_ANON =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U";
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// --------------------------------
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+/* --------------------------------------------- */
 
-// Elements
+/* Elements */
 const authArea = document.getElementById("authArea");
-const btnSignUp = document.getElementById("btnSignUp");
-const btnSignIn = document.getElementById("btnSignIn");
-const modal = document.getElementById("modal");
-const modalTitle = document.getElementById("modalTitle");
-const modalSubmit = document.getElementById("modalSubmit");
-const modalCancel = document.getElementById("modalCancel");
-const emailIn = document.getElementById("email");
-const passIn = document.getElementById("password");
-const modalMsg = document.getElementById("modalMsg");
-
 const uploadPanel = document.getElementById("uploadPanel");
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -100,194 +84,172 @@ const uploadStatus = document.getElementById("uploadStatus");
 const preview = document.getElementById("preview");
 const gamesGrid = document.getElementById("gamesGrid");
 
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const modalMsg = document.getElementById("modalMsg");
+const modalSubmit = document.getElementById("modalSubmit");
+const modalCancel = document.getElementById("modalCancel");
+const emailInput = document.getElementById("email");
+const passInput = document.getElementById("password");
+
 let modalMode = "signin";
 
+/* ------- Modal Helpers ------- */
 function showModal(mode) {
   modalMode = mode;
-  modalTitle.innerText = mode === "signin" ? "Sign In" : "Sign Up";
-  modalSubmit.innerText = mode === "signin" ? "Sign In" : "Create Account";
-  emailIn.value = "";
-  passIn.value = "";
-  modalMsg.innerText = "";
+  modalTitle.textContent = (mode === "signin") ? "Sign In" : "Create Account";
+  modalMsg.textContent = "";
+  emailInput.value = "";
+  passInput.value = "";
   modal.style.display = "flex";
 }
-function hideModal() { modal.style.display = "none"; }
+modalCancel.onclick = () => { modal.style.display = "none"; };
 
-btnSignUp.onclick = () => showModal("signup");
-btnSignIn.onclick = () => showModal("signin");
-modalCancel.onclick = hideModal;
-
-// ---------- AUTH WITHOUT EMAIL VERIFICATION ----------
+/* ------- Auth Logic ------- */
 modalSubmit.onclick = async () => {
-  modalMsg.innerText = "";
-  const email = emailIn.value.trim();
-  const pass = passIn.value;
+  const email = emailInput.value.trim();
+  const pass = passInput.value;
 
   if (!email || !pass) {
-    modalMsg.innerText = "Email and password required.";
+    modalMsg.textContent = "Email + password required";
     return;
   }
 
-  try {
-    if (modalMode === "signup") {
+  if (modalMode === "signup") {
+    const { error } = await sb.auth.signUp({
+      email,
+      password: pass,
+      options: { emailRedirectTo: undefined }
+    });
 
-      // SIGN UP WITHOUT EMAIL CONFIRMATION
-      const { data, error } = await sb.auth.signUp({
-        email,
-        password: pass,
-        options: { emailRedirectTo: undefined }
-      });
+    if (error) { modalMsg.textContent = error.message; return; }
 
-      if (error) { modalMsg.innerText = error.message; return; }
-
-      // auto login after signup
-      const { error: loginErr } = await sb.auth.signInWithPassword({ email, password: pass });
-      if (loginErr) { modalMsg.innerText = loginErr.message; return; }
-
-      hideModal();
-      onAuthChange();
-
-    } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-      if (error) { modalMsg.innerText = error.message; return; }
-
-      hideModal();
-      onAuthChange();
-    }
-  } catch (e) {
-    modalMsg.innerText = e.message || "Auth error";
+    await sb.auth.signInWithPassword({ email, password: pass });
+  } else {
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) { modalMsg.textContent = error.message; return; }
   }
-};
-// -----------------------------------------------------
 
-// Update Auth UI
-async function onAuthChange() {
+  modal.style.display = "none";
+  refreshAuthUI();
+};
+
+async function refreshAuthUI() {
   const { data: sessionData } = await sb.auth.getSession();
   const user = sessionData?.session?.user;
 
-  if (user) {
-    authArea.innerHTML = `
-      <div class="small">Signed in: ${user.email}</div>
-      <button id="btnSignOut" class="btn">Sign out</button>
-    `;
-    document.getElementById("btnSignOut").onclick = async () => {
-      await sb.auth.signOut();
-      location.reload();
-    };
-    uploadPanel.style.display = "block";
-  } else {
-    uploadPanel.style.display = "none";
+  if (!user) {
     authArea.innerHTML = `
       <button id="btnSignUp" class="btn">Sign up</button>
       <button id="btnSignIn" class="btn primary">Sign in</button>
     `;
     document.getElementById("btnSignUp").onclick = () => showModal("signup");
     document.getElementById("btnSignIn").onclick = () => showModal("signin");
+    uploadPanel.style.display = "none";
+  } else {
+    authArea.innerHTML = `
+      <div class="small">Signed in: ${user.email}</div>
+      <button id="btnSignOut" class="btn">Sign out</button>
+    `;
+    document.getElementById("btnSignOut").onclick = async () => {
+      await sb.auth.signOut();
+      refreshAuthUI();
+    };
+    uploadPanel.style.display = "block";
   }
 }
 
-onAuthChange();
-sb.auth.onAuthStateChange(() => onAuthChange());
-
-// -------------- SIMPLE NRF UPLOAD (NO VALIDATION) --------------
+/* ------- Upload NRF ------- */
 uploadBtn.onclick = async () => {
   uploadStatus.textContent = "";
   preview.innerHTML = "";
 
   const file = fileInput.files[0];
   if (!file) { uploadStatus.textContent = "Pick a file."; return; }
-
-  if (!file.name.toLowerCase().endsWith(".nrf")) {
-    uploadStatus.textContent = "Only .nrf files allowed.";
+  if (!file.name.endsWith(".nrf")) {
+    uploadStatus.textContent = "Only .nrf allowed.";
     return;
   }
 
   const { data: sessionData } = await sb.auth.getSession();
   const user = sessionData?.session?.user;
+
   if (!user) {
-    uploadStatus.textContent = "Not signed in.";
+    uploadStatus.textContent = "Sign in first.";
     return;
   }
 
+  const path = `games/${user.id}/${Date.now()}_${file.name}`;
   uploadStatus.textContent = "Uploading...";
 
-  const timestamp = Date.now();
-  const storagePath = `games/${user.id}/${timestamp}_${file.name}`;
+  const { error: upErr } = await sb.storage
+    .from("games")
+    .upload(path, file);
 
-  const { error: uploadError } =
-    await sb.storage.from("games").upload(storagePath, file);
-
-  if (uploadError) {
-    uploadStatus.textContent = "Upload failed: " + uploadError.message;
+  if (upErr) {
+    uploadStatus.textContent = "Upload failed: " + upErr.message;
     return;
   }
 
-  // Get public URL
-  const { data: pub } = sb.storage.from("games").getPublicUrl(storagePath);
-
-  // Insert record in DB
-  const { error: insertError } = await sb.from("games").insert([{
+  // Insert DB record
+  const { error: dbErr } = await sb.from("games").insert([{
     title: file.name.replace(".nrf", ""),
     description: "NODe Game",
     filename: file.name,
-    storage_path: storagePath,
+    storage_path: path,
     uploader: user.id,
     uploader_email: user.email,
     version: "N/A",
     runtime_version: "0.1"
   }]);
 
-  if (insertError) {
-    uploadStatus.textContent = "Database error: " + insertError.message;
+  if (dbErr) {
+    uploadStatus.textContent = "DB Error: " + dbErr.message;
     return;
   }
 
-  uploadStatus.textContent = "Upload complete!";
-  preview.innerHTML = `<strong>${file.name}</strong> uploaded successfully.`;
-
+  uploadStatus.textContent = "Uploaded!";
+  preview.textContent = file.name + " uploaded.";
   loadGames();
 };
-// ---------------------------------------------------------------
 
-// -------------- LOAD GAME LIST --------------
+/* ------- Load Games ------- */
 async function loadGames() {
-  gamesGrid.innerHTML = "Loading...";
-
   const { data, error } = await sb
     .from("games")
     .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
-    gamesGrid.innerHTML = "Failed to load games.";
+    gamesGrid.textContent = "Error loading games";
     return;
   }
 
   if (!data.length) {
-    gamesGrid.innerHTML = "No games uploaded yet.";
+    gamesGrid.textContent = "No games yet.";
     return;
   }
 
   gamesGrid.innerHTML = "";
   for (const g of data) {
     const { data: pub } = sb.storage.from("games").getPublicUrl(g.storage_path);
-    const url = pub.publicUrl;
-
     const el = document.createElement("div");
     el.className = "card";
     el.innerHTML = `
       <div class="thumb">📦</div>
       <div class="meta">
         <div class="title">${g.title}</div>
-        <div class="desc">Uploaded by ${g.uploader_email}</div>
-        <a class="dl" href="${url}" download>Download</a>
+        <div class="desc">by ${g.uploader_email}</div>
+        <a class="dl" href="${pub.publicUrl}" download>Download</a>
       </div>
     `;
     gamesGrid.appendChild(el);
   }
 }
+
+/* Start */
+refreshAuthUI();
 loadGames();
-// -------------------------------------------------
 </script>
 
 </body>
