@@ -1,47 +1,42 @@
 /* --------------------------------------------------------- */
-/*     NODe Hub — Theme F: White with Blue Old-Web UI       */
+/*     NODe Hub — Theme F: White with Blue Old-Web UI         */
 /* --------------------------------------------------------- */
 
+/* Color Variables */
 :root {
     --blue: #0b59a9;
     --blue-dark: #083c73;
     --blue-light: #e1f0ff;
-    --nav-blue: #0a4c90;
-    --nav-blue-light: #0f6ac7;
-
-    --gray-text: #555;
-    --bg: #ffffff;
+    --blue-mid: #0a4d8f;
+    --border: #b7d0ec;
     --panel-bg: #f7faff;
-    --border: #c3d8ef;
+    --text-gray: #555;
 }
 
-/* ---------- GENERAL ---------- */
-
+/* ---------- GLOBAL ---------- */
 body {
     margin:0;
     font-family: Tahoma, Verdana, Arial, sans-serif;
-    background: var(--bg);
+    background:#ffffff;
     color:#000;
 }
 
-/* Old web drop shadow */
 .page-container {
-    width: 95%;
-    max-width: 1100px;
-    margin: 20px auto;
-    padding: 10px;
+    width:95%;
+    max-width:1100px;
+    margin:20px auto;
 }
 
-/* ---------- TOP NAV ---------- */
 
+/* ---------- NAVIGATION ---------- */
 .topbar {
+    background: linear-gradient(#ffffff, #e5f0ff);
+    border-bottom:3px solid var(--blue);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+    padding:10px 20px;
     display:flex;
-    align-items:center;
     justify-content:space-between;
-    padding: 10px 20px;
-    background: linear-gradient(#ffffff, #eaf4ff);
-    border-bottom: 3px solid var(--blue);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.08);
+    align-items:center;
 }
 
 .brand {
@@ -53,40 +48,36 @@ body {
 #logo {
     background: var(--blue);
     color:white;
-    padding: 8px 14px;
-    font-size: 20px;
+    padding:8px 14px;
     font-weight:bold;
-    border-radius: 4px;
+    font-size:20px;
+    border-radius:4px;
     box-shadow: 0 3px 0 var(--blue-dark);
 }
 
 .subtitle {
-    color: var(--gray-text);
-    font-size: 11px;
-    margin-left: 4px;
+    font-size:11px;
+    color:var(--text-gray);
 }
-
-
-/* ---------- NAV BUTTONS ---------- */
 
 .nav {
     display:flex;
-    gap:10px;
+    gap:8px;
 }
 
 .nav-btn {
-    background: var(--nav-blue);
+    background: var(--blue-mid);
+    border:1px solid var(--blue-dark);
     color:white;
-    border:1px solid var(--nav-blue-light);
-    padding: 7px 13px;
-    border-radius: 4px;
+    padding:6px 12px;
+    border-radius:4px;
     cursor:pointer;
     font-size:14px;
-    box-shadow: 0 2px 0 var(--blue-dark);
+    box-shadow:0 2px 0 var(--blue-dark);
 }
 
 .nav-btn:hover {
-    background: var(--nav-blue-light);
+    background:#0d6ad7;
 }
 
 .actions {
@@ -96,13 +87,11 @@ body {
 
 
 /* ---------- BUTTONS ---------- */
-
 .btn {
     background: var(--blue);
-    color:white !important;
-    padding:7px 13px;
+    color:white;
     border:none;
-    font-size:14px;
+    padding:7px 14px;
     border-radius:4px;
     cursor:pointer;
     text-decoration:none;
@@ -111,35 +100,15 @@ body {
 }
 
 .btn:hover {
-    background: var(--nav-blue-light);
+    background: #0d6ad7;
 }
 
 .btn.primary {
-    background: var(--nav-blue);
-}
-
-
-/* ---------- PANELS ---------- */
-
-.page {
-    background: var(--panel-bg);
-    border:1px solid var(--border);
-    padding:20px;
-    border-radius:6px;
-    margin-top:20px;
-}
-
-/* Old web headings */
-.page h1 {
-    color: var(--blue);
-    border-bottom: 2px solid var(--blue);
-    padding-bottom:5px;
-    margin-bottom:15px;
+    background: var(--blue-mid);
 }
 
 
 /* ---------- INPUTS ---------- */
-
 .input {
     width:100%;
     padding:8px;
@@ -147,119 +116,202 @@ body {
     border-radius:4px;
     font-size:14px;
     background:white;
-    margin-top:4px;
-}
-
-textarea.input {
-    resize:vertical;
 }
 
 .input:focus {
     outline:none;
-    border-color: var(--blue);
+    border-color:var(--blue);
     box-shadow:0 0 3px rgba(0,90,170,0.3);
 }
 
 
-/* ---------- CARDS (Browse Page) ---------- */
+/* ---------- PAGE PANEL ---------- */
+.page {
+    background: var(--panel-bg);
+    padding:20px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    margin-bottom:25px;
+}
 
+.page h1 {
+    color:var(--blue);
+    border-bottom:2px solid var(--blue);
+    padding-bottom:5px;
+    margin-bottom:15px;
+}
+
+
+/* ---------- FORM ---------- */
+.form-row {
+    margin-bottom:15px;
+}
+
+.notice {
+    background: var(--blue-light);
+    border:1px solid var(--border);
+    padding:10px;
+    border-radius:4px;
+}
+
+
+/* ---------- BROWSE GRID ---------- */
 .grid {
     display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
-    gap:16px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap:15px;
 }
 
 .card {
     background:white;
     border:1px solid var(--border);
     padding:10px;
-    display:flex;
-    gap:12px;
     border-radius:4px;
     box-shadow:0 2px 3px rgba(0,0,0,0.05);
+    display:flex;
+    gap:10px;
 }
 
-.thumb {
+.thumb img {
     width:64px;
     height:64px;
-    border:1px solid var(--border);
-    background:#fff;
-    overflow:hidden;
     border-radius:4px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    object-fit:cover;
+    border:1px solid var(--border);
 }
 
-.meta {
-    flex:1;
-}
-
-.title {
+.card .title {
     font-weight:bold;
-    color: var(--blue);
-    font-size:15px;
+    color:var(--blue);
 }
 
-.desc {
+.card .desc {
     font-size:13px;
-    color: var(--gray-text);
+    color:var(--text-gray);
 }
 
-
-/* ---------- OVERLAY GAME PAGE ---------- */
-
-.overlay {
-    position:fixed;
-    left:0; top:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.5);
+.pagination {
+    margin-top:20px;
     display:flex;
-    align-items:center;
     justify-content:center;
-}
-
-.overlay-content {
-    background:white;
-    padding:20px;
-    width:90%;
-    max-width:600px;
-    border-radius:6px;
-    border:1px solid var(--border);
-    box-shadow:0 3px 8px rgba(0,0,0,0.25);
-}
-
-.overlay-content h2 {
-    color: var(--blue);
-    margin-top:0;
-}
-
-.overlay-content img {
-    margin:10px 0;
-    width:250px;
-    border:1px solid var(--border);
-    border-radius:6px;
-}
-
-
-/* ---------- MISC ---------- */
-
-.form-row {
-    margin-bottom:14px;
+    gap:20px;
 }
 
 .small {
     font-size:12px;
-    color: var(--gray-text);
-}
-
-.notice {
-    background: var(--blue-light);
-    border: 1px solid var(--border);
-    padding:10px;
-    border-radius:4px;
+    color:var(--text-gray);
 }
 
 .error {
-    color:#b30000;
-    font-size:12px;
+    color:#b40000;
+}
+
+
+/* ---------- OVERLAYS ---------- */
+.overlay {
+    position:fixed;
+    left:0; top:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.overlay-content {
+    background:white;
+    border:1px solid var(--border);
+    padding:20px;
+    border-radius:6px;
+    max-width:700px;
+    width:100%;
+    max-height:90vh;
+    overflow:auto;
+}
+
+
+/* ---------- GAME DETAILS ---------- */
+#gameDetail img.cover {
+    width:240px;
+    height:auto;
+    border-radius:6px;
+    border:1px solid var(--border);
+    margin-bottom:12px;
+}
+
+/* ---------- GALLERY ---------- */
+.gallery {
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin:10px 0;
+}
+
+.gallery img {
+    width:120px;
+    height:120px;
+    object-fit:cover;
+    border-radius:4px;
+    border:1px solid var(--border);
+}
+
+.gallery img:hover {
+    transform:scale(1.05);
+    transition:0.1s;
+}
+
+
+/* ---------- COMMENTS ---------- */
+#commentList {
+    margin-top:10px;
+}
+
+.comment {
+    border-bottom:1px solid var(--border);
+    padding:8px 0;
+}
+
+.comment-user {
+    font-weight:bold;
+    color:var(--blue);
+}
+
+.comment-text {
+    margin:5px 0;
+}
+
+/* ---------- PROFILE OVERLAY ---------- */
+#profileContent img.avatar {
+    width:96px;
+    height:96px;
+    border-radius:50%;
+    border:2px solid var(--blue);
+    object-fit:cover;
+    margin-bottom:10px;
+}
+
+#profileContent .profile-username {
+    font-size:20px;
+    font-weight:bold;
+    color:var(--blue);
+}
+
+#profileContent .profile-bio {
+    font-size:14px;
+    margin:8px 0;
+}
+
+.profile-games {
+    margin-top:20px;
+}
+
+.profile-games-title {
+    font-weight:bold;
+    margin-bottom:8px;
+}
+
+.profile-games-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap:12px;
 }
