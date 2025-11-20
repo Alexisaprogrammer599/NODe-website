@@ -1,277 +1,535 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NODe Hub</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <title>NODe Hub</title>
 
-  <link rel="stylesheet" href="game.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.83.0/dist/umd/supabase.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="game.css">
 </head>
+
 <body>
 
+<!-- ------------------------------------------------- -->
+<!-- HEADER / NAVIGATION -->
+<!-- ------------------------------------------------- -->
+
 <header class="topbar">
-  <div class="brand">
-    <div id="logo">NODe</div>
-    <div class="subtitle">Runtime 0.1 pre-alpha</div>
-  </div>
-  <div class="actions" id="authArea">
-    <!-- Filled by JS -->
-  </div>
-</header>
-
-<main class="page">
-  <section class="hero">
-    <h1>NODe Games</h1>
-    <p>Sign in to upload your .nrf games.</p>
-  </section>
-
-  <section id="uploadPanel" class="upload-panel" style="display:none;">
-    <h2>Upload Game</h2>
-
-    <div class="form-row">
-      <label class="small">Select a .nrf file</label>
-      <input type="file" id="fileInput" accept=".nrf">
+    <div class="brand">
+        <div id="logo">NODe</div>
+        <div class="subtitle">Runtime 0.1 pre-alpha</div>
     </div>
 
-    <button id="uploadBtn" class="btn primary">Upload</button>
-    <span id="uploadStatus" class="small"></span>
+    <nav class="nav">
+        <button class="nav-btn" data-page="home">Home</button>
+        <button class="nav-btn" data-page="browse">Browse</button>
+        <button class="nav-btn" data-page="create">Create</button>
+        <button class="nav-btn" data-page="play">Play</button>
+        <button class="nav-btn" data-page="account">Account</button>
+    </nav>
 
-    <div id="preview" class="preview"></div>
-  </section>
+    <div class="actions" id="authArea"></div>
+</header>
 
-  <section>
-    <h2>Games</h2>
-    <div id="gamesGrid" class="grid"></div>
-  </section>
+
+<!-- ------------------------------------------------- -->
+<!-- PAGES -->
+<!-- ------------------------------------------------- -->
+
+<main class="page-container">
+
+
+    <!-- HOME -->
+    <section class="page" id="page-home">
+        <h1>Welcome to NODe</h1>
+        <p>Create, browse, and play adventure games.</p>
+        <p>Sign in to upload your own games.</p>
+    </section>
+
+
+    <!-- BROWSE PAGE -->
+    <section class="page" id="page-browse" style="display:none;">
+
+        <h1>Browse Games</h1>
+
+        <div class="filter-bar">
+            <input id="searchInput" class="input" placeholder="Search games...">
+            
+            <select id="ratingFilter" class="input">
+                <option value="">All Ratings</option>
+                <option value="9+">9+</option>
+                <option value="12+">12+</option>
+                <option value="16+">16+</option>
+                <option value="18+">18+</option>
+            </select>
+        </div>
+
+        <div id="browseGrid" class="grid"></div>
+
+    </section>
+
+
+    <!-- GAME DETAIL OVERLAY -->
+    <div id="gameDetailOverlay" class="overlay" style="display:none;">
+        <div class="overlay-content">
+
+            <button id="closeGameDetail" class="btn">Close</button>
+
+            <div id="gameDetail"></div>
+
+        </div>
+    </div>
+
+
+    <!-- CREATE PAGE -->
+    <section class="page" id="page-create" style="display:none;">
+        <h1>Create & Upload Game</h1>
+
+        <div id="createNotLogged" class="notice">Sign in to upload games.</div>
+
+        <div id="createPanel" style="display:none;">
+            <div class="form-row">
+                <label>Game Title</label>
+                <input id="gameTitle" class="input">
+            </div>
+
+            <div class="form-row">
+                <label>Description</label>
+                <textarea id="gameDesc" class="input" rows="4"></textarea>
+            </div>
+
+            <div class="form-row">
+                <label>Tags (comma separated)</label>
+                <input id="gameTags" class="input" placeholder="horror, cool">
+            </div>
+
+            <div class="form-row">
+                <label>Age Rating</label>
+                <select id="gameRating" class="input">
+                    <option value="9+">9+</option>
+                    <option value="12+" selected>12+</option>
+                    <option value="16+">16+</option>
+                    <option value="18+">18+</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label>Cover Image</label>
+                <input id="coverInput" type="file" accept="image/*">
+            </div>
+
+            <div class="form-row">
+                <label>Game File (.nrf)</label>
+                <input id="nrfInput" type="file" accept=".nrf">
+            </div>
+
+            <button id="uploadGameBtn" class="btn primary">Upload Game</button>
+            <div id="uploadGameStatus" class="small"></div>
+        </div>
+    </section>
+
+
+    <!-- PLAY PAGE -->
+    <section class="page" id="page-play" style="display:none;">
+        <h1>Play Games</h1>
+
+        <p>Download the NODe Runtime to play locally:</p>
+        <a class="btn primary" href="runtime.zip" download>Download Runtime</a>
+
+        <p style="margin-top:20px;">Need to develop a game?</p>
+        <a class="btn" href="sdk.zip" download>Download SDK</a>
+    </section>
+
+
+    <!-- ACCOUNT PAGE -->
+    <section class="page" id="page-account" style="display:none;">
+        <h1>Your Account</h1>
+
+        <div id="accountInfo"></div>
+
+        <div id="usernameSection" style="display:none;">
+            <h3>Your Username</h3>
+            <input id="usernameInput" class="input">
+            <button id="saveUsernameBtn" class="btn primary">Save</button>
+            <div id="usernameStatus" class="small"></div>
+        </div>
+
+    </section>
+
+
 </main>
 
-<footer class="foot">© NODe Platform</footer>
 
-<!-- Auth Modal -->
+<!-- ------------------------------------------------- -->
+<!-- AUTH MODAL -->
+<!-- ------------------------------------------------- -->
 <div id="modal"
      style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;
             background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
-  <div style="background:white;padding:20px;border-radius:6px;width:300px;">
-    <h3 id="modalTitle">Sign In</h3>
+    <div style="background:white;padding:20px;border-radius:6px;width:300px;">
+        <h3 id="modalTitle">Sign In</h3>
 
-    <div class="form-row">
-      <input id="email" class="input" type="email" placeholder="Email">
-    </div>
-    <div class="form-row">
-      <input id="password" class="input" type="password" placeholder="Password">
-    </div>
+        <div class="form-row">
+            <input id="email" class="input" type="email" placeholder="Email">
+        </div>
+        <div class="form-row">
+            <input id="password" class="input" type="password" placeholder="Password">
+        </div>
 
-    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
-      <button id="modalCancel" class="btn">Cancel</button>
-      <button id="modalSubmit" class="btn primary">OK</button>
-    </div>
+        <div class="form-row">
+            <input id="usernameReg" class="input" placeholder="Username (only for sign up)">
+        </div>
 
-    <div id="modalMsg" class="small error"></div>
-  </div>
+        <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+            <button id="modalCancel" class="btn">Cancel</button>
+            <button id="modalSubmit" class="btn primary">OK</button>
+        </div>
+
+        <div id="modalMsg" class="small error"></div>
+    </div>
 </div>
 
+
+
+<!-- ------------------------------------------------- -->
+<!-- MAIN SCRIPT -->
+<!-- ------------------------------------------------- -->
+
 <script>
-// ---------- Supabase config ----------
+/* -------------------------------------------------------------------------- */
+/*                           SUPABASE INITIALIZATION                           */
+/* -------------------------------------------------------------------------- */
+
 const SUPABASE_URL = "https://rowzonuulxhiefncbwnp.supabase.co";
-const SUPABASE_ANON =
+const SUPABASE_ANON = 
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-// ------------------------------------
 
-// Elements
+
+
+/* -------------------------------------------------------------------------- */
+/*                               PAGE SWITCHING                               */
+/* -------------------------------------------------------------------------- */
+
+const navButtons = document.querySelectorAll(".nav-btn");
+const pages = document.querySelectorAll(".page");
+
+navButtons.forEach(btn => {
+    btn.onclick = () => {
+        const page = btn.dataset.page;
+
+        pages.forEach(p => p.style.display = "none");
+        document.getElementById("page-" + page).style.display = "block";
+    };
+});
+
+
+
+/* -------------------------------------------------------------------------- */
+/*                                 AUTH LOGIC                                 */
+/* -------------------------------------------------------------------------- */
+
 const authArea = document.getElementById("authArea");
-const uploadPanel = document.getElementById("uploadPanel");
-const fileInput = document.getElementById("fileInput");
-const uploadBtn = document.getElementById("uploadBtn");
-const uploadStatus = document.getElementById("uploadStatus");
-const preview = document.getElementById("preview");
-const gamesGrid = document.getElementById("gamesGrid");
-
 const modal = document.getElementById("modal");
-const modalTitle = document.getElementById("modalTitle");
-const modalMsg = document.getElementById("modalMsg");
-const modalSubmit = document.getElementById("modalSubmit");
 const modalCancel = document.getElementById("modalCancel");
-const emailInput = document.getElementById("email");
-const passInput = document.getElementById("password");
+const modalSubmit = document.getElementById("modalSubmit");
+const modalTitle = document.getElementById("modalTitle");
 
 let modalMode = "signin";
 
 function showModal(mode) {
-  modalMode = mode;
-  modalTitle.textContent = (mode === "signin") ? "Sign In" : "Create Account";
-  modalMsg.textContent = "";
-  emailInput.value = "";
-  passInput.value = "";
-  modal.style.display = "flex";
+    modalMode = mode;
+    modalTitle.textContent = (mode === "signup") ? "Sign Up" : "Sign In";
+    modal.style.display = "flex";
 }
+modalCancel.onclick = () => { modal.style.display = "none"; };
 
-modalCancel.onclick = () => {
-  modal.style.display = "none";
-};
 
-// signup/signin handler
 modalSubmit.onclick = async () => {
-  const email = emailInput.value.trim();
-  const pass = passInput.value;
+    const email = emailInput.value.trim();
+    const pass = passInput.value;
+    const username = usernameReg.value.trim();
 
-  if (!email || !pass) {
-    modalMsg.textContent = "Email + password required";
-    return;
-  }
-
-  try {
-    if (modalMode === "signup") {
-      const { error: signUpErr } = await sb.auth.signUp({
-        email,
-        password: pass,
-        options: { emailRedirectTo: undefined }
-      });
-      if (signUpErr) {
-        modalMsg.textContent = signUpErr.message;
+    if (!email || !pass) {
+        modalMsg.textContent = "Email + password required";
         return;
-      }
-      await sb.auth.signInWithPassword({ email, password: pass });
-    } else {
-      const { error: signInErr } = await sb.auth.signInWithPassword({ email, password: pass });
-      if (signInErr) {
-        modalMsg.textContent = signInErr.message;
-        return;
-      }
     }
 
-    modal.style.display = "none";
-  } catch (e) {
-    modalMsg.textContent = e.message || "Auth error";
-  }
+    try {
+        if (modalMode === "signup") {
+
+            if (!username) {
+                modalMsg.textContent = "Username required";
+                return;
+            }
+
+            const { data, error } = await sb.auth.signUp({
+                email,
+                password: pass,
+                options: { emailRedirectTo: undefined }
+            });
+
+            if (error) {
+                modalMsg.textContent = error.message;
+                return;
+            }
+
+            await sb.auth.signInWithPassword({ email, password: pass });
+
+            // Insert username into profiles
+            await sb.from("profiles").insert([{ id: data.user.id, username }]);
+
+        } else {
+            await sb.auth.signInWithPassword({ email, password: pass });
+        }
+
+        modal.style.display = "none";
+
+    } catch (e) {
+        modalMsg.textContent = e.message || "Auth error";
+    }
 };
 
-// Auth UI refresh
+
+
+/* -------------------------------------------------------------------------- */
+/*                         REFRESH AUTH & ACCOUNT PAGE                        */
+/* -------------------------------------------------------------------------- */
+
 async function refreshAuthUI() {
-  const { data: sessionData } = await sb.auth.getSession();
-  const user = sessionData?.session?.user;
+    const { data: sessionData } = await sb.auth.getSession();
+    const user = sessionData?.session?.user;
 
-  if (!user) {
-    authArea.innerHTML = `
-      <button id="btnSignUp" class="btn">Sign up</button>
-      <button id="btnSignIn" class="btn primary">Sign in</button>
-    `;
-    uploadPanel.style.display = "none";
+    if (!user) {
+        authArea.innerHTML = `
+        <button class="btn" id="btnSignUp">Sign Up</button>
+        <button class="btn primary" id="btnSignIn">Sign In</button>
+        `;
 
-    document.getElementById("btnSignUp").onclick = () => showModal("signup");
-    document.getElementById("btnSignIn").onclick = () => showModal("signin");
-  } else {
-    authArea.innerHTML = `
-      <div class="small">Signed in: ${user.email}</div>
-      <button id="btnSignOut" class="btn">Sign out</button>
-    `;
-    uploadPanel.style.display = "block";
+        document.getElementById("btnSignUp").onclick = () => showModal("signup");
+        document.getElementById("btnSignIn").onclick = () => showModal("signin");
 
-    document.getElementById("btnSignOut").onclick = async () => {
-      await sb.auth.signOut();
-    };
-  }
+        document.getElementById("createPanel").style.display = "none";
+        document.getElementById("createNotLogged").style.display = "block";
+
+        document.getElementById("accountInfo").innerHTML = `
+            <p>You are not signed in.</p>
+        `;
+        document.getElementById("usernameSection").style.display = "none";
+    }
+
+    else {
+        authArea.innerHTML = `
+        <div class="small">Signed in: ${user.email}</div>
+        <button class="btn" id="btnSignOut">Sign Out</button>
+        `;
+
+        document.getElementById("btnSignOut").onclick = async () => {
+            await sb.auth.signOut();
+        };
+
+        document.getElementById("createPanel").style.display = "block";
+        document.getElementById("createNotLogged").style.display = "none";
+
+        // Load account info
+        const { data: p } = await sb.from("profiles").select("*").eq("id", user.id).single();
+
+        document.getElementById("accountInfo").innerHTML = `
+            <p><b>Email:</b> ${user.email}</p>
+            <p><b>Username:</b> ${p?.username || "(none)"} </p>
+        `;
+
+        document.getElementById("usernameInput").value = p?.username || "";
+        document.getElementById("usernameSection").style.display = "block";
+    }
 }
 
-// FORCE UI refresh every 0.5s so it always updates
-setInterval(refreshAuthUI, 500);
+setInterval(refreshAuthUI, 400);
 
-// Upload NRF
-uploadBtn.onclick = async () => {
-  uploadStatus.textContent = "";
-  preview.textContent = "";
 
-  const file = fileInput.files[0];
-  if (!file) {
-    uploadStatus.textContent = "Pick a file.";
-    return;
-  }
 
-  if (!file.name.toLowerCase().endsWith(".nrf")) {
-    uploadStatus.textContent = "Only .nrf files allowed.";
-    return;
-  }
+/* -------------------------------------------------------------------------- */
+/*                           SAVE USERNAME CHANGE                             */
+/* -------------------------------------------------------------------------- */
 
-  const { data: sessionData } = await sb.auth.getSession();
-  const user = sessionData?.session?.user;
-  if (!user) {
-    uploadStatus.textContent = "Sign in first.";
-    return;
-  }
+document.getElementById("saveUsernameBtn").onclick = async () => {
+    const { data: sessionData } = await sb.auth.getSession();
+    const user = sessionData?.session?.user;
+    const username = usernameInput.value.trim();
 
-  const path = `games/${user.id}/${Date.now()}_${file.name}`;
-  uploadStatus.textContent = "Uploading...";
+    if (!username) return;
 
-  const { error: upErr } = await sb.storage.from("games").upload(path, file);
-  if (upErr) {
-    uploadStatus.textContent = "Upload failed: " + upErr.message;
-    return;
-  }
+    const { error } = await sb
+        .from("profiles")
+        .update({ username })
+        .eq("id", user.id);
 
-  const { error: dbErr } = await sb.from("games").insert([{
-    title: file.name.replace(/\.nrf$/i, ""),
-    description: "NODe Game",
-    filename: file.name,
-    storage_path: path,
-    uploader: user.id,
-    uploader_email: user.email,
-    version: "N/A",
-    runtime_version: "0.1"
-  }]);
-
-  if (dbErr) {
-    uploadStatus.textContent = "DB error: " + dbErr.message;
-    return;
-  }
-
-  uploadStatus.textContent = "Uploaded!";
-  preview.textContent = file.name + " uploaded.";
-  loadGames();
+    usernameStatus.textContent = error ? error.message : "Saved!";
 };
 
-// Load game list
-async function loadGames() {
-  const { data, error } = await sb
-    .from("games")
-    .select("*")
-    .order("created_at", { ascending: false });
 
-  if (error) {
-    gamesGrid.textContent = "Error loading games";
-    return;
-  }
 
-  if (!data || !data.length) {
-    gamesGrid.textContent = "No games yet.";
-    return;
-  }
+/* -------------------------------------------------------------------------- */
+/*                              UPLOAD GAME LOGIC                             */
+/* -------------------------------------------------------------------------- */
 
-  gamesGrid.innerHTML = "";
-  for (const g of data) {
-    const { data: pub } = sb.storage.from("games").getPublicUrl(g.storage_path);
-    const url = pub.publicUrl;
+document.getElementById("uploadGameBtn").onclick = async () => {
 
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="thumb">📦</div>
-      <div class="meta">
-        <div class="title">${g.title}</div>
-        <div class="desc">by ${g.uploader_email}</div>
-        <a class="dl" href="${url}" download>Download</a>
-      </div>
-    `;
-    gamesGrid.appendChild(card);
-  }
+    uploadGameStatus.textContent = "";
+
+    const title = gameTitle.value.trim();
+    const desc = gameDesc.value.trim();
+    const tags = gameTags.value.trim();
+    const rating = gameRating.value;
+
+    const coverFile = coverInput.files[0];
+    const nrfFile = nrfInput.files[0];
+
+    if (!title || !desc || !tags || !coverFile || !nrfFile) {
+        uploadGameStatus.textContent = "Fill all fields.";
+        return;
+    }
+
+    if (!nrfFile.name.endsWith(".nrf")) {
+        uploadGameStatus.textContent = "NRF file required.";
+        return;
+    }
+
+    const { data: sessionData } = await sb.auth.getSession();
+    const user = sessionData?.session?.user;
+
+    // Upload cover
+    const coverPath = `covers/${user.id}_${Date.now()}_${coverFile.name}`;
+    const { error: cErr } = await sb.storage
+        .from("game-assets")
+        .upload(coverPath, coverFile);
+
+    if (cErr) {
+        uploadGameStatus.textContent = "Cover upload failed.";
+        return;
+    }
+
+    // Upload game file
+    const gamePath = `games/${user.id}_${Date.now()}_${nrfFile.name}`;
+    const { error: gErr } = await sb.storage
+        .from("games")
+        .upload(gamePath, nrfFile);
+
+    if (gErr) {
+        uploadGameStatus.textContent = "Game upload failed.";
+        return;
+    }
+
+    // Get username
+    const { data: p } = await sb.from("profiles").select("*").eq("id", user.id).single();
+
+    // Insert DB entry
+    const { error: dbErr } = await sb.from("games").insert([{
+        title,
+        description: desc,
+        filename: nrfFile.name,
+        storage_path: gamePath,
+        cover_path: coverPath,
+        uploader: user.id,
+        uploader_email: user.email,
+        uploader_username: p.username,
+        tags,
+        age_rating: rating,
+        version: "N/A",
+        runtime_version: "0.1"
+    }]);
+
+    if (dbErr) {
+        uploadGameStatus.textContent = "Database error: " + dbErr.message;
+        return;
+    }
+
+    uploadGameStatus.textContent = "Game uploaded!";
+};
+
+
+
+/* -------------------------------------------------------------------------- */
+/*                               LOAD BROWSE PAGE                             */
+/* -------------------------------------------------------------------------- */
+
+async function loadBrowsePage() {
+    const { data, error } = await sb
+        .from("games")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    const grid = document.getElementById("browseGrid");
+    grid.innerHTML = "";
+
+    data.forEach(g => {
+        const { data: pub } = sb.storage
+            .from("game-assets")
+            .getPublicUrl(g.cover_path);
+
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `
+            <div class="thumb"><img src="${pub.publicUrl}" style="width:64px;height:64px;border-radius:4px;object-fit:cover;"></div>
+            <div class="meta">
+                <div class="title">${g.title}</div>
+                <div class="desc">by ${g.uploader_username}</div>
+                <button class="btn" onclick="viewGame('${g.id}')">View</button>
+            </div>
+        `;
+        grid.appendChild(el);
+    });
 }
 
-// Initial load
-loadGames();
+setInterval(loadBrowsePage, 1500);
+
+
+
+/* -------------------------------------------------------------------------- */
+/*                               GAME DETAIL VIEW                             */
+/* -------------------------------------------------------------------------- */
+
+async function viewGame(gameId) {
+    const { data: g } = await sb.from("games").select("*").eq("id", gameId).single();
+
+    const { data: cover } = sb.storage
+        .from("game-assets")
+        .getPublicUrl(g.cover_path);
+
+    const { data: nrf } = sb.storage
+        .from("games")
+        .getPublicUrl(g.storage_path);
+
+    const container = document.getElementById("gameDetail");
+
+    container.innerHTML = `
+        <h2>${g.title}</h2>
+        <img src="${cover.publicUrl}" style="width:250px;border-radius:6px;">
+        <p><b>Description:</b><br>${g.description}</p>
+        <p><b>Developer:</b> ${g.uploader_username}</p>
+        <p><b>Tags:</b> ${g.tags}</p>
+        <p><b>Age Rating:</b> ${g.age_rating}</p>
+        <p><b>Uploaded:</b> ${new Date(g.created_at).toLocaleDateString()}</p>
+        <a class="btn primary" href="${nrf.publicUrl}" download>Download Game</a>
+    `;
+
+    document.getElementById("gameDetailOverlay").style.display = "flex";
+}
+
+document.getElementById("closeGameDetail").onclick = () => {
+    document.getElementById("gameDetailOverlay").style.display = "none";
+};
+
+
 
 </script>
+
 </body>
+
 </html>
