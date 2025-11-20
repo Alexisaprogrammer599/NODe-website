@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>NODe Hub</title>
 
-  <!-- Supabase FIRST -->
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <link rel="stylesheet" href="game.css">
@@ -18,7 +18,7 @@
     <div class="subtitle">Runtime 0.1 pre-alpha</div>
   </div>
   <div class="actions" id="authArea">
-    <!-- JavaScript will fill this -->
+    <!-- Filled by JS -->
   </div>
 </header>
 
@@ -31,7 +31,10 @@
   <section id="uploadPanel" class="upload-panel" style="display:none;">
     <h2>Upload Game</h2>
 
-    <input type="file" id="fileInput" accept=".nrf">
+    <div class="form-row">
+      <label class="small">Select a .nrf file</label>
+      <input type="file" id="fileInput" accept=".nrf">
+    </div>
 
     <button id="uploadBtn" class="btn primary">Upload</button>
     <span id="uploadStatus" class="small"></span>
@@ -47,15 +50,19 @@
 
 <footer class="foot">© NODe Platform</footer>
 
-<!-- Sign In / Sign Up Modal -->
+<!-- Auth Modal -->
 <div id="modal"
      style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;
             background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
   <div style="background:white;padding:20px;border-radius:6px;width:300px;">
     <h3 id="modalTitle">Sign In</h3>
 
-    <input id="email" class="input" type="email" placeholder="Email">
-    <input id="password" class="input" type="password" placeholder="Password">
+    <div class="form-row">
+      <input id="email" class="input" type="email" placeholder="Email">
+    </div>
+    <div class="form-row">
+      <input id="password" class="input" type="password" placeholder="Password">
+    </div>
 
     <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
       <button id="modalCancel" class="btn">Cancel</button>
@@ -67,15 +74,15 @@
 </div>
 
 <script>
-/* ------------------ CONFIG ------------------ */
+// ---------- Supabase config ----------
 const SUPABASE_URL = "https://rowzonuulxhiefncbwnp.supabase.co";
 const SUPABASE_ANON =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-/* --------------------------------------------- */
+// ------------------------------------
 
-/* Elements */
+// Elements
 const authArea = document.getElementById("authArea");
 const uploadPanel = document.getElementById("uploadPanel");
 const fileInput = document.getElementById("fileInput");
@@ -94,7 +101,6 @@ const passInput = document.getElementById("password");
 
 let modalMode = "signin";
 
-/* ------- Modal Helpers ------- */
 function showModal(mode) {
   modalMode = mode;
   modalTitle.textContent = (mode === "signin") ? "Sign In" : "Create Account";
@@ -103,9 +109,12 @@ function showModal(mode) {
   passInput.value = "";
   modal.style.display = "flex";
 }
-modalCancel.onclick = () => { modal.style.display = "none"; };
 
-/* ------- Auth Logic ------- */
+modalCancel.onclick = () => {
+  modal.style.display = "none";
+};
+
+// signup/signin handler
 modalSubmit.onclick = async () => {
   const email = emailInput.value.trim();
   const pass = passInput.value;
@@ -115,25 +124,33 @@ modalSubmit.onclick = async () => {
     return;
   }
 
-  if (modalMode === "signup") {
-    const { error } = await sb.auth.signUp({
-      email,
-      password: pass,
-      options: { emailRedirectTo: undefined }
-    });
+  try {
+    if (modalMode === "signup") {
+      const { error: signUpErr } = await sb.auth.signUp({
+        email,
+        password: pass,
+        options: { emailRedirectTo: undefined }
+      });
+      if (signUpErr) {
+        modalMsg.textContent = signUpErr.message;
+        return;
+      }
+      await sb.auth.signInWithPassword({ email, password: pass });
+    } else {
+      const { error: signInErr } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (signInErr) {
+        modalMsg.textContent = signInErr.message;
+        return;
+      }
+    }
 
-    if (error) { modalMsg.textContent = error.message; return; }
-
-    await sb.auth.signInWithPassword({ email, password: pass });
-  } else {
-    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-    if (error) { modalMsg.textContent = error.message; return; }
+    modal.style.display = "none";
+  } catch (e) {
+    modalMsg.textContent = e.message || "Auth error";
   }
-
-  modal.style.display = "none";
-  refreshAuthUI();
 };
 
+// Auth UI refresh
 async function refreshAuthUI() {
   const { data: sessionData } = await sb.auth.getSession();
   const user = sessionData?.session?.user;
@@ -143,37 +160,44 @@ async function refreshAuthUI() {
       <button id="btnSignUp" class="btn">Sign up</button>
       <button id="btnSignIn" class="btn primary">Sign in</button>
     `;
+    uploadPanel.style.display = "none";
+
     document.getElementById("btnSignUp").onclick = () => showModal("signup");
     document.getElementById("btnSignIn").onclick = () => showModal("signin");
-    uploadPanel.style.display = "none";
   } else {
     authArea.innerHTML = `
       <div class="small">Signed in: ${user.email}</div>
       <button id="btnSignOut" class="btn">Sign out</button>
     `;
+    uploadPanel.style.display = "block";
+
     document.getElementById("btnSignOut").onclick = async () => {
       await sb.auth.signOut();
-      refreshAuthUI();
     };
-    uploadPanel.style.display = "block";
   }
 }
 
-/* ------- Upload NRF ------- */
+// FORCE UI refresh every 0.5s so it always updates
+setInterval(refreshAuthUI, 500);
+
+// Upload NRF
 uploadBtn.onclick = async () => {
   uploadStatus.textContent = "";
-  preview.innerHTML = "";
+  preview.textContent = "";
 
   const file = fileInput.files[0];
-  if (!file) { uploadStatus.textContent = "Pick a file."; return; }
-  if (!file.name.endsWith(".nrf")) {
-    uploadStatus.textContent = "Only .nrf allowed.";
+  if (!file) {
+    uploadStatus.textContent = "Pick a file.";
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith(".nrf")) {
+    uploadStatus.textContent = "Only .nrf files allowed.";
     return;
   }
 
   const { data: sessionData } = await sb.auth.getSession();
   const user = sessionData?.session?.user;
-
   if (!user) {
     uploadStatus.textContent = "Sign in first.";
     return;
@@ -182,18 +206,14 @@ uploadBtn.onclick = async () => {
   const path = `games/${user.id}/${Date.now()}_${file.name}`;
   uploadStatus.textContent = "Uploading...";
 
-  const { error: upErr } = await sb.storage
-    .from("games")
-    .upload(path, file);
-
+  const { error: upErr } = await sb.storage.from("games").upload(path, file);
   if (upErr) {
     uploadStatus.textContent = "Upload failed: " + upErr.message;
     return;
   }
 
-  // Insert DB record
   const { error: dbErr } = await sb.from("games").insert([{
-    title: file.name.replace(".nrf", ""),
+    title: file.name.replace(/\.nrf$/i, ""),
     description: "NODe Game",
     filename: file.name,
     storage_path: path,
@@ -204,7 +224,7 @@ uploadBtn.onclick = async () => {
   }]);
 
   if (dbErr) {
-    uploadStatus.textContent = "DB Error: " + dbErr.message;
+    uploadStatus.textContent = "DB error: " + dbErr.message;
     return;
   }
 
@@ -213,7 +233,7 @@ uploadBtn.onclick = async () => {
   loadGames();
 };
 
-/* ------- Load Games ------- */
+// Load game list
 async function loadGames() {
   const { data, error } = await sb
     .from("games")
@@ -225,7 +245,7 @@ async function loadGames() {
     return;
   }
 
-  if (!data.length) {
+  if (!data || !data.length) {
     gamesGrid.textContent = "No games yet.";
     return;
   }
@@ -233,24 +253,25 @@ async function loadGames() {
   gamesGrid.innerHTML = "";
   for (const g of data) {
     const { data: pub } = sb.storage.from("games").getPublicUrl(g.storage_path);
-    const el = document.createElement("div");
-    el.className = "card";
-    el.innerHTML = `
+    const url = pub.publicUrl;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
       <div class="thumb">📦</div>
       <div class="meta">
         <div class="title">${g.title}</div>
         <div class="desc">by ${g.uploader_email}</div>
-        <a class="dl" href="${pub.publicUrl}" download>Download</a>
+        <a class="dl" href="${url}" download>Download</a>
       </div>
     `;
-    gamesGrid.appendChild(el);
+    gamesGrid.appendChild(card);
   }
 }
 
-/* Start */
-refreshAuthUI();
+// Initial load
 loadGames();
-</script>
 
+</script>
 </body>
 </html>
