@@ -1,134 +1,160 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>NODe Game Downloads</title>
-
-<style>
-    body { font-family: Arial; background:#111; color:#eee; margin:0; padding:0; }
-    header { background:#1b1b1b; padding:20px; text-align:center; border-bottom:2px solid #333; }
-    h1 { margin:0; font-size:32px; }
-    .subtitle { color:#aaa; font-size:14px; margin-top:5px; }
-
-    .container { width:90%; max-width:900px; margin:25px auto; }
-
-    .btn { 
-        background:#0d6efd; padding:10px 16px; border-radius:6px;
-        color:white; text-decoration:none; display:inline-block; margin-top:10px;
-    }
-    .btn:hover { background:#0b5ed7; }
-
-    .upload-box, .game-card {
-        background:#1e1e1e; padding:16px; border-radius:10px; border:1px solid #333; margin-bottom:22px;
-    }
-
-    .file-input { margin-top:15px; }
-    .game-card h2 { margin:0; font-size:22px; }
-    .game-card p { margin:8px 0 12px 0; color:#ccc; }
-
-    .download-btn {
-        padding:10px 14px; border-radius:6px; background:#00a8ff; color:white;
-        text-decoration:none; font-weight:bold;
-    }
-</style>
+<meta charset="utf-8" />
+<title>NODe Hub — Games</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="game.css">
 </head>
-
 <body>
-<header>
-    <h1>NODe Downloads</h1>
-    <div class="subtitle">Runtime 0.1 Pre-Alpha • Upload & Share Games</div>
-
-    <a class="btn" id="loginBtn">Login with GitHub</a>
+<header class="topbar">
+  <div class="brand">
+    <div id="logo">NODe</div>
+    <div class="subtitle">Runtime 0.1 pre-alpha</div>
+  </div>
+  <div class="actions">
+    <a id="loginBtn" class="btn primary">Login with GitHub</a>
     <span id="user"></span>
+  </div>
 </header>
 
-<div class="container">
+<main class="page">
+  <section class="hero">
+    <h1>Featured Games</h1>
+    <p>Upload, share, and download NODe adventure packages.</p>
+  </section>
 
-    <div class="upload-box" id="upload-section" style="display:none;">
-        <h2>Upload a NODe Game (.nrf)</h2>
-        <input id="fileInput" class="file-input" type="file" accept=".nrf,.zip">
-        <br><br>
-        <button class="btn" onclick="uploadFile()">Upload</button>
+  <section class="upload-panel" id="uploadPanel" style="display:none;">
+    <h2>Upload a game</h2>
+    <input type="file" id="fileInput" accept=".nrf,.zip">
+    <div>
+      <button class="btn primary" id="uploadBtn">Validate & Upload</button>
+      <span id="uploadStatus"></span>
     </div>
+    <div id="preview" class="preview"></div>
+  </section>
 
-    <h2>Available Downloads</h2>
-    <div id="games"></div>
+  <section>
+    <h2>All Games</h2>
+    <div id="gamesGrid" class="grid"></div>
+  </section>
+</main>
 
-</div>
+<footer class="foot">© NODe — OG Platform Theme</footer>
 
 <script>
-const CLIENT_ID = "Ov23li5lWi8G41RLWojz";
-const USERNAME = "alexisaprogrammer599";
+/* CONFIG - replace VERCEL_URL with your deployed Vercel URL if different */
+const CLIENT_ID = "Ov23li5lWi8G41RLWojz"; // public
+const USERNAME = "Alexisaprogrammer599";
 const REPO = "NODe-website";
 const VERCEL_URL = "https://node-website-git-main-alexisaprogrammer599s-projects.vercel.app";
 
+/* --- OAuth link --- */
 document.getElementById("loginBtn").href =
-    `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo`;
+  `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo`;
 
-const code = new URLSearchParams(window.location.search).get("code");
-
-if (code) {
-    fetch(`${VERCEL_URL}/api/auth?code=${code}`)
+/* exchange code via Vercel auth endpoint */
+const urlCode = new URLSearchParams(window.location.search).get("code");
+if (urlCode) {
+  fetch(`${VERCEL_URL}/api/auth?code=${urlCode}`)
     .then(r => r.json())
     .then(data => {
-        localStorage.setItem("token", data.access_token);
-        window.location = "index.html";
+      if (data.access_token) {
+        localStorage.setItem("gh_token", data.access_token);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        initLoggedIn();
+      } else {
+        console.error("Auth error", data);
+      }
     });
 }
 
-const token = localStorage.getItem("token");
-if (token) {
+function initLoggedIn() {
+  const token = localStorage.getItem("gh_token");
+  if (token) {
     document.getElementById("loginBtn").style.display = "none";
-    document.getElementById("user").innerText = "Logged In";
-    document.getElementById("upload-section").style.display = "block";
+    document.getElementById("user").innerText = "Logged in";
+    document.getElementById("uploadPanel").style.display = "block";
+  }
 }
 
-function uploadFile() {
-    const file = document.getElementById("fileInput").files[0];
-    if (!file) return alert("No file chosen.");
+initLoggedIn();
 
-    const reader = new FileReader();
-    reader.onload = function() {
-        const content = btoa(reader.result);
-        fetch(`${VERCEL_URL}/api/upload`, {
-            method: "POST",
-            body: JSON.stringify({
-                filename: file.name,
-                content: content,
-                token: token,
-                username: USERNAME,
-                repo: REPO
-            })
-        })
-        .then(r => r.json())
-        .then(() => {
-            alert("Uploaded!");
-            loadGames();
-        });
-    };
-    reader.readAsBinaryString(file);
-}
-
+/* load games listing from GitHub /games folder */
 function loadGames() {
-    fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/games`)
-        .then(r => r.json())
-        .then(files => {
-            const div = document.getElementById("games");
-            div.innerHTML = "";
-            files.forEach(f => {
-                div.innerHTML += `
-                    <div class="game-card">
-                        <h2>${f.name}</h2>
-                        <p>NODe Game File</p>
-                        <a class="download-btn" href="${f.download_url}">Download</a>
-                    </div>
-                `;
-            });
-        });
+  fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/games`)
+    .then(r => r.json())
+    .then(files => {
+      const grid = document.getElementById("gamesGrid");
+      grid.innerHTML = "";
+      if (!Array.isArray(files)) {
+        grid.innerHTML = "<div class='note'>No games found.</div>";
+        return;
+      }
+      files.forEach(f => {
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `
+          <div class="thumb">📦</div>
+          <div class="meta">
+            <div class="title">${f.name}</div>
+            <div class="desc">NODe package</div>
+            <a class="dl" href="${f.download_url}" target="_blank">Download</a>
+          </div>
+        `;
+        grid.appendChild(el);
+      });
+    });
 }
-
 loadGames();
-</script>
 
+/* Validate + Upload logic */
+document.getElementById("uploadBtn").addEventListener("click", async () => {
+  const file = document.getElementById("fileInput").files[0];
+  const status = document.getElementById("uploadStatus");
+  const preview = document.getElementById("preview");
+  preview.innerText = "";
+  status.innerText = "";
+
+  if (!file) { status.innerText = "Pick a file first."; return; }
+  if (!/\.(nrf|zip)$/i.test(file.name)) { status.innerText = "File must be .nrf or .zip"; return; }
+
+  const arrBuf = await file.arrayBuffer();
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(arrBuf)));
+
+  status.innerText = "Validating...";
+
+  const token = localStorage.getItem("gh_token");
+  if (!token) { status.innerText = "You must log in first."; return; }
+
+  const payload = {
+    filename: file.name,
+    content: b64,
+    token: token,
+    username: USERNAME,
+    repo: REPO
+  };
+
+  const resp = await fetch(`${VERCEL_URL}/api/upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const jr = await resp.json();
+  if (!resp.ok) {
+    status.innerText = "Upload failed: " + (jr.error || jr.detail || JSON.stringify(jr));
+    console.error(jr);
+    return;
+  }
+
+  status.innerText = "Upload succeeded!";
+  if (jr.metadata) {
+    preview.innerHTML = `<div class="meta-preview"><strong>${jr.metadata.Gamename}</strong> by ${jr.metadata.CreatedBy}<br>v${jr.metadata.Version}</div>`;
+  }
+
+  loadGames();
+});
+</script>
 </body>
 </html>
