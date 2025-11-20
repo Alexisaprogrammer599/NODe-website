@@ -1,8 +1,8 @@
 // api/auth.js
 export default async function handler(req, res) {
-  const { code } = req.query;
+  const code = req.query.code;
   if (!code) {
-    res.status(400).json({ error: "Missing ?code" });
+    res.status(400).json({ error: "Missing `code` query parameter" });
     return;
   }
 
@@ -18,7 +18,6 @@ export default async function handler(req, res) {
   });
 
   const tokenJson = await tokenRes.json();
-
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200).json(tokenJson);
 }
