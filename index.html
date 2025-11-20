@@ -1,17 +1,16 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>NODe Hub — Supabase Auth + Storage</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NODe Hub — Supabase Auth + Storage</title>
 
-<!-- Supabase JS (UMD) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<!-- JSZip for client-side zip validation -->
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Load Supabase JS (UMD) FIRST -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- Load JSZip for local zip validation -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-<link rel="stylesheet" href="game.css">
-
+  <link rel="stylesheet" href="game.css">
 </head>
 <body>
 
@@ -60,7 +59,7 @@
 
 <footer class="foot">© NODe — Supabase edition</footer>
 
-<!-- Authentication modal (signup / signin) -->
+<!-- Auth modal -->
 <div id="modal" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
   <div style="background:white;padding:18px;border-radius:8px;max-width:420px;width:90%;">
     <h3 id="modalTitle">Sign In</h3>
@@ -77,13 +76,13 @@
 </div>
 
 <script>
-// ---------- CONFIG: fill these with your Supabase project values ----------
+// ---------- CONFIG: your Supabase project ----------
 const SUPABASE_URL = "https://rowzonuulxhiefncbwnp.supabase.co";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_PUBLIC_KEY_HERE"; // <--- paste anon key here
-// -------------------------------------------------------------------------
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U";
+// --------------------------------------------------
 
-// initialize Supabase client (umd exposes `supabase` global)
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// create client WITHOUT shadowing the global
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // UI elements
 const authArea = document.getElementById("authArea");
@@ -106,36 +105,51 @@ const titleInput = document.getElementById("titleInput");
 
 const gamesGrid = document.getElementById("gamesGrid");
 
-let modalMode = "signin"; // or "signup"
-function showModal(mode){
+// Modal state
+let modalMode = "signin";
+
+function showModal(mode) {
   modalMode = mode;
   modalTitle.innerText = mode === "signin" ? "Sign In" : "Sign Up";
   modalSubmit.innerText = mode === "signin" ? "Sign In" : "Create Account";
   modalMsg.innerText = "";
-  emailIn.value = ""; passIn.value = "";
+  emailIn.value = "";
+  passIn.value = "";
   modal.style.display = "flex";
 }
-function hideModal(){ modal.style.display = "none"; }
+function hideModal() {
+  modal.style.display = "none";
+}
 
-btnSignUp.onclick = ()=> showModal("signup");
-btnSignIn.onclick = ()=> showModal("signin");
+// Attach button handlers
+btnSignUp.onclick = () => showModal("signup");
+btnSignIn.onclick = () => showModal("signin");
 modalCancel.onclick = hideModal;
 
-modalSubmit.onclick = async ()=>{
+// Sign up / sign in
+modalSubmit.onclick = async () => {
   modalMsg.innerText = "";
   const email = emailIn.value.trim();
   const pass = passIn.value;
-  if (!email || !pass) { modalMsg.innerText = "Email and password required"; return; }
+  if (!email || !pass) {
+    modalMsg.innerText = "Email and password required";
+    return;
+  }
 
   try {
     if (modalMode === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email, password: pass });
-      if (error) { modalMsg.innerText = error.message; return; }
+      const { data, error } = await sb.auth.signUp({ email, password: pass });
+      if (error) {
+        modalMsg.innerText = error.message;
+        return;
+      }
       modalMsg.innerText = "Sign-up success. Check your email to confirm (if enabled).";
-      // optionally auto sign-in or require confirm
     } else {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error) { modalMsg.innerText = error.message; return; }
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) {
+        modalMsg.innerText = error.message;
+        return;
+      }
       hideModal();
       await onAuthChange();
     }
@@ -144,61 +158,71 @@ modalSubmit.onclick = async ()=>{
   }
 };
 
-// Auth state handler
+// Handle auth state
 async function onAuthChange() {
-  const { data: sessionData } = await supabase.auth.getSession();
+  const { data: sessionData } = await sb.auth.getSession();
   const session = sessionData?.session || null;
-  const userResp = await supabase.auth.getUser();
+  const userResp = await sb.auth.getUser();
   const user = userResp.data?.user || session?.user || null;
 
   if (user) {
-    authArea.innerHTML = `<div class="small">Signed in: ${user.email}</div><button id="btnSignOut" class="btn">Sign out</button>`;
-    document.getElementById("btnSignOut").onclick = async ()=> {
-      await supabase.auth.signOut();
+    authArea.innerHTML = `<div class="small">Signed in: ${user.email}</div>
+                          <button id="btnSignOut" class="btn">Sign out</button>`;
+    document.getElementById("btnSignOut").onclick = async () => {
+      await sb.auth.signOut();
       window.location.reload();
     };
     uploadPanel.style.display = "block";
   } else {
-    authArea.innerHTML = `<button id="btnSignUp" class="btn">Sign up</button><button id="btnSignIn" class="btn primary">Sign in</button>`;
-    document.getElementById("btnSignUp").onclick = ()=> showModal("signup");
-    document.getElementById("btnSignIn").onclick = ()=> showModal("signin");
+    authArea.innerHTML = `<button id="btnSignUp" class="btn">Sign up</button>
+                          <button id="btnSignIn" class="btn primary">Sign in</button>`;
+    document.getElementById("btnSignUp").onclick = () => showModal("signup");
+    document.getElementById("btnSignIn").onclick = () => showModal("signin");
     uploadPanel.style.display = "none";
   }
 }
-onAuthChange();
 
-// keep auth reactive
-supabase.auth.onAuthStateChange((event, session) => {
+// initial auth check
+onAuthChange();
+// react to changes
+sb.auth.onAuthStateChange((_event, _session) => {
   onAuthChange();
 });
 
-// Utility: lightweight Game.txt checks
-function validateGameTxt(text){
-  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+// Validate Game.txt roughly
+function validateGameTxt(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const hasScene = lines.some(l => /^Scene\s+/i.test(l) || /^Ending\s+/i.test(l));
-  if (!hasScene) return { ok:false, error:"No Scene or Ending found in Game.txt" };
+  if (!hasScene) return { ok: false, error: "No Scene or Ending found in Game.txt" };
 
-  for (let i=0;i<lines.length;i++){
-    if (/^choice$/i.test(lines[i]) || /^choice\s+/i.test(lines[i])){
-      let chunk = lines[i].replace(/^choice\s*/i,"");
-      let j=i+1;
-      while (j<lines.length && j < i+6 && !/^(Scene|Ending|Background:|goto|quit|.+ says |.+ looks |pause|.+ gives )/i.test(lines[j])){
-        chunk += " " + lines[j]; j++;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^choice$/i.test(lines[i]) || /^choice\s+/i.test(lines[i])) {
+      let chunk = lines[i].replace(/^choice\s*/i, "");
+      let j = i + 1;
+      while (
+        j < lines.length &&
+        j < i + 6 &&
+        !/^(Scene|Ending|Background:|goto|quit|.+ says |.+ looks |pause|.+ gives )/i.test(lines[j])
+      ) {
+        chunk += " " + lines[j];
+        j++;
       }
-      if (!/'[^']+'/.test(chunk)) return { ok:false, error:`Malformed choice block near line ${i+1}. Missing quoted scene target.`};
+      if (!/'[^']+'/.test(chunk)) {
+        return { ok: false, error: `Malformed choice block near line ${i + 1}. Missing quoted scene target.` };
+      }
     }
   }
-  return { ok:true };
+  return { ok: true };
 }
 
-// Parse and validate GameInfo
-function parseGameInfo(text){
+// Parse GameInfo.txt
+function parseGameInfo(text) {
   const info = {};
-  for (const line of text.split(/\r?\n/)){
+  for (const line of text.split(/\r?\n/)) {
     const idx = line.indexOf(":");
-    if (idx >= 0){
+    if (idx >= 0) {
       const k = line.slice(0, idx).trim();
-      const v = line.slice(idx+1).trim();
+      const v = line.slice(idx + 1).trim();
       info[k] = v;
     }
   }
@@ -206,66 +230,80 @@ function parseGameInfo(text){
 }
 
 // Upload flow
-uploadBtn.onclick = async ()=>{
+uploadBtn.onclick = async () => {
   uploadStatus.textContent = "";
   preview.innerText = "";
   const file = fileInput.files[0];
-  if (!file) { uploadStatus.textContent = "Pick a file first."; return; }
-  if (!/\.(nrf|zip)$/i.test(file.name)) { uploadStatus.textContent = "File must be .nrf or .zip"; return; }
+  if (!file) {
+    uploadStatus.textContent = "Pick a file first.";
+    return;
+  }
+  if (!/\.(nrf|zip)$/i.test(file.name)) {
+    uploadStatus.textContent = "File must be .nrf or .zip";
+    return;
+  }
 
   uploadStatus.textContent = "Reading file...";
   try {
     const arrayBuffer = await file.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
 
-    // find GameInfo.txt and Game.txt
     const files = Object.keys(zip.files);
     const giPath = files.find(p => p === "GameInfo.txt" || p.endsWith("/GameInfo.txt"));
     const gtPath = files.find(p => p === "Game.txt" || p.endsWith("/Game.txt"));
-    if (!giPath || !gtPath) { uploadStatus.textContent = "Archive must include GameInfo.txt and Game.txt"; return; }
+
+    if (!giPath || !gtPath) {
+      uploadStatus.textContent = "Archive must include GameInfo.txt and Game.txt";
+      return;
+    }
 
     const gameInfoStr = await zip.file(giPath).async("string");
     const gameTxtStr = await zip.file(gtPath).async("string");
 
-    // parse & validate GameInfo
     const info = parseGameInfo(gameInfoStr);
     const required = ["Gamename", "Created By", "Version", "Runtime Version"];
-    for (const k of required){
-      if (!info[k]) { uploadStatus.textContent = `GameInfo.txt missing ${k}`; return; }
+    for (const k of required) {
+      if (!info[k]) {
+        uploadStatus.textContent = `GameInfo.txt missing ${k}`;
+        return;
+      }
     }
 
-    // validate Game.txt
     const gtv = validateGameTxt(gameTxtStr);
-    if (!gtv.ok) { uploadStatus.textContent = `Game.txt error: ${gtv.error}`; return; }
+    if (!gtv.ok) {
+      uploadStatus.textContent = `Game.txt error: ${gtv.error}`;
+      return;
+    }
 
-    // OK: show preview
     preview.innerHTML = `<strong>${info.Gamename}</strong> by ${info["Created By"]} — v${info.Version}`;
 
-    // Upload to Supabase Storage
     uploadStatus.textContent = "Uploading to storage...";
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await sb.auth.getSession();
     const user = sessionData?.session?.user;
-    if (!user) { uploadStatus.textContent = "Not authenticated."; return; }
+    if (!user) {
+      uploadStatus.textContent = "Not authenticated.";
+      return;
+    }
 
-    // Build storage path: games/{uploaderId}/{timestamp}_{filename}
     const timestamp = Date.now();
     const storagePath = `games/${user.id}/${timestamp}_${file.name}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await sb.storage
       .from("games")
       .upload(storagePath, file, { cacheControl: "3600", upsert: false });
 
-    if (uploadError) { uploadStatus.textContent = "Storage upload failed: " + uploadError.message; console.error(uploadError); return; }
+    if (uploadError) {
+      uploadStatus.textContent = "Storage upload failed: " + uploadError.message;
+      console.error(uploadError);
+      return;
+    }
 
-    // Construct public URL (if bucket is public)
-    const { data: publicUrlData } = supabase.storage.from("games").getPublicUrl(storagePath);
+    const { data: publicUrlData } = sb.storage.from("games").getPublicUrl(storagePath);
     const publicURL = publicUrlData?.publicUrl || null;
 
-    // Insert metadata row into DB
     uploadStatus.textContent = "Saving metadata...";
-    const { error: insertError } = await supabase
-      .from("games")
-      .insert([{
+    const { error: insertError } = await sb.from("games").insert([
+      {
         title: info.Gamename,
         description: info.Description || null,
         filename: file.name,
@@ -273,17 +311,19 @@ uploadBtn.onclick = async ()=>{
         uploader: user.id,
         uploader_email: user.email,
         version: info.Version,
-        runtime_version: info["Runtime Version"],
-      }]);
+        runtime_version: info["Runtime Version"]
+      }
+    ]);
 
-    if (insertError) { uploadStatus.textContent = "DB insert failed: " + insertError.message; console.error(insertError); return; }
+    if (insertError) {
+      uploadStatus.textContent = "DB insert failed: " + insertError.message;
+      console.error(insertError);
+      return;
+    }
 
     uploadStatus.textContent = "Upload complete!";
     preview.innerHTML += `<div class="success">Uploaded ✓</div>`;
-
-    // Refresh listing
     loadGames();
-
   } catch (e) {
     console.error(e);
     uploadStatus.textContent = "Error reading archive: " + e.message;
@@ -291,9 +331,9 @@ uploadBtn.onclick = async ()=>{
 };
 
 // Load games listing
-async function loadGames(){
+async function loadGames() {
   gamesGrid.innerHTML = "<div class='small'>Loading...</div>";
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from("games")
     .select("id, title, description, filename, storage_path, uploader_email, version, runtime_version, created_at")
     .order("created_at", { ascending: false });
@@ -303,6 +343,7 @@ async function loadGames(){
     console.error(error);
     return;
   }
+
   if (!data || data.length === 0) {
     gamesGrid.innerHTML = "<div class='note'>No games yet.</div>";
     return;
@@ -310,8 +351,7 @@ async function loadGames(){
 
   gamesGrid.innerHTML = "";
   for (const g of data) {
-    // get public URL
-    const { data: publicUrlData } = supabase.storage.from("games").getPublicUrl(g.storage_path);
+    const { data: publicUrlData } = sb.storage.from("games").getPublicUrl(g.storage_path);
     const publicURL = publicUrlData?.publicUrl || "#";
     const card = document.createElement("div");
     card.className = "card";
