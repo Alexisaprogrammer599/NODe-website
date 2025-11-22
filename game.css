@@ -1,42 +1,51 @@
-/* --- Classic NODe Blue/White Theme --- */
+/* === Classic NODe Website Theme === */
 body {
   font-family: "Segoe UI", Arial, sans-serif;
+  background-color: #fdfdff;
+  color: #000;
   margin: 0;
   padding: 0;
-  background-color: #f9f9ff;
-  color: #000;
   text-align: center;
 }
 
+/* Header */
 header {
   background-color: #0022ff;
   color: white;
-  padding: 20px 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  padding: 20px 0 10px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+header h1 {
+  margin: 0;
+  font-size: 2em;
+  letter-spacing: 1px;
+}
+
+/* Navigation */
 nav {
   margin-top: 10px;
 }
 
 .tab-btn {
-  background-color: white;
+  background: white;
   border: 2px solid #0022ff;
   color: #0022ff;
-  padding: 10px 16px;
-  margin: 4px;
-  cursor: pointer;
+  padding: 8px 14px;
   border-radius: 6px;
+  margin: 3px;
+  cursor: pointer;
   font-weight: bold;
-  transition: 0.2s;
+  transition: 0.2s ease;
 }
 
-.tab-btn.active,
-.tab-btn:hover {
-  background-color: #0022ff;
+.tab-btn:hover,
+.tab-btn.active {
+  background: #0022ff;
   color: white;
 }
 
+/* Tabs */
 .tab {
   display: none;
   padding: 30px;
@@ -44,41 +53,48 @@ nav {
 
 .tab.active {
   display: block;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.3s ease-in;
 }
 
+/* Titles and Sections */
 h2 {
   color: #0022ff;
+  margin-bottom: 10px;
 }
 
+/* Auth boxes and panels */
 .auth-box {
   background: white;
   border: 2px solid #0022ff;
   border-radius: 10px;
-  max-width: 380px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
   margin: 30px auto;
-  padding: 20px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 25px;
   text-align: left;
 }
 
+/* Inputs */
 .input {
   width: 100%;
   padding: 10px;
-  margin: 8px 0;
-  border: 1px solid #aaa;
-  border-radius: 6px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-top: 8px;
+  box-sizing: border-box;
 }
 
+/* Buttons */
 .button {
   background-color: #0022ff;
   color: white;
   border: none;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border-radius: 6px;
+  margin-top: 10px;
   cursor: pointer;
   font-weight: bold;
-  margin-top: 8px;
+  transition: 0.2s;
 }
 
 .button:hover {
@@ -86,29 +102,58 @@ h2 {
 }
 
 .danger {
-  background-color: #ff2222;
+  background-color: #ff2c2c;
+}
+.danger:hover {
+  background-color: #cc0000;
 }
 
-footer {
-  margin-top: 30px;
-  font-size: 0.9em;
-  padding: 20px;
-  color: #333;
-}
-
+/* Users list */
 ul {
   list-style: none;
   padding: 0;
+  margin: 20px auto;
+  max-width: 400px;
 }
 
 ul li {
   background: white;
-  margin: 6px auto;
-  max-width: 300px;
   border: 2px solid #0022ff;
   border-radius: 8px;
-  padding: 8px;
+  margin: 8px 0;
+  padding: 10px;
   font-weight: 500;
+  transition: 0.2s;
+}
+ul li:hover {
+  background: #eef1ff;
+}
+
+/* Footer */
+footer {
+  margin-top: 50px;
+  color: #444;
+  font-size: 0.9em;
+  padding: 15px;
+  border-top: 1px solid #ddd;
+}
+
+/* Loader */
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #0022ff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin: 20px auto;
+  animation: spin 1s linear infinite;
+  display: none;
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeIn {
