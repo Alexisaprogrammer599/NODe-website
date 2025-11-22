@@ -1,4 +1,4 @@
-/* --- NODe Blue/White Theme --- */
+/* --- Classic NODe Blue/White Theme --- */
 body {
   font-family: "Segoe UI", Arial, sans-serif;
   margin: 0;
@@ -11,7 +11,8 @@ body {
 header {
   background-color: #0022ff;
   color: white;
-  padding: 15px;
+  padding: 20px 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 nav {
@@ -22,12 +23,12 @@ nav {
   background-color: white;
   border: 2px solid #0022ff;
   color: #0022ff;
-  padding: 8px 14px;
-  margin: 3px;
+  padding: 10px 16px;
+  margin: 4px;
   cursor: pointer;
-  border-radius: 5px;
-  transition: 0.2s;
+  border-radius: 6px;
   font-weight: bold;
+  transition: 0.2s;
 }
 
 .tab-btn.active,
@@ -38,11 +39,35 @@ nav {
 
 .tab {
   display: none;
-  padding: 25px;
+  padding: 30px;
 }
 
 .tab.active {
   display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+h2 {
+  color: #0022ff;
+}
+
+.auth-box {
+  background: white;
+  border: 2px solid #0022ff;
+  border-radius: 10px;
+  max-width: 380px;
+  margin: 30px auto;
+  padding: 20px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  text-align: left;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #aaa;
+  border-radius: 6px;
 }
 
 .button {
@@ -51,42 +76,24 @@ nav {
   border: none;
   padding: 10px 16px;
   border-radius: 6px;
-  margin-top: 8px;
   cursor: pointer;
   font-weight: bold;
+  margin-top: 8px;
 }
 
 .button:hover {
   background-color: #001bcc;
 }
 
-.auth-box {
-  background: white;
-  border: 2px solid #0022ff;
-  border-radius: 10px;
-  max-width: 400px;
-  margin: 30px auto;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  margin-top: 10px;
+.danger {
+  background-color: #ff2222;
 }
 
 footer {
   margin-top: 30px;
   font-size: 0.9em;
-  padding: 10px;
+  padding: 20px;
   color: #333;
-}
-
-.danger {
-  background-color: #ff2222;
 }
 
 ul {
@@ -102,4 +109,9 @@ ul li {
   border-radius: 8px;
   padding: 8px;
   font-weight: 500;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
