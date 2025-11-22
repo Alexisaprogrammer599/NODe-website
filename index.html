@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NODe Platform</title>
-  <link rel="stylesheet" href="game.css">
+  <link rel="stylesheet" href="game.css" />
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script defer src="app.js"></script>
 </head>
@@ -19,31 +19,33 @@
   </header>
 
   <main>
+    <!-- Home -->
     <section id="home" class="tab active">
       <h2>Welcome to NODe</h2>
-      <p>Create and play adventure-based games with the NODe SDK and Runtime.</p>
-      <button id="github-login" class="button">Sign in with GitHub</button>
+      <p>Create and play adventure-based games using the NODe SDK & Runtime.</p>
     </section>
 
+    <!-- Users -->
     <section id="users" class="tab">
       <h2>Users</h2>
       <ul id="users-list">Loading users...</ul>
     </section>
 
+    <!-- Account -->
     <section id="account" class="tab">
       <div id="signin-form" class="auth-box">
         <h2>Sign In</h2>
-        <input type="email" id="signin-email" placeholder="Email" class="input">
-        <input type="password" id="signin-password" placeholder="Password" class="input">
+        <input type="email" id="signin-email" placeholder="Email" class="input" />
+        <input type="password" id="signin-password" placeholder="Password" class="input" />
         <button id="signin-btn" class="button">Sign In</button>
         <p>Don’t have an account? <a id="show-signup">Sign Up</a></p>
       </div>
 
       <div id="signup-form" class="auth-box" style="display:none;">
         <h2>Sign Up</h2>
-        <input type="text" id="signup-username" placeholder="Username" class="input">
-        <input type="email" id="signup-email" placeholder="Email" class="input">
-        <input type="password" id="signup-password" placeholder="Password" class="input">
+        <input type="text" id="signup-username" placeholder="Username" class="input" />
+        <input type="email" id="signup-email" placeholder="Email" class="input" />
+        <input type="password" id="signup-password" placeholder="Password" class="input" />
         <button id="signup-btn" class="button">Create Account</button>
         <p>Already have an account? <a id="show-signin">Sign In</a></p>
       </div>
@@ -51,7 +53,7 @@
       <div id="account-info" class="auth-box" style="display:none;">
         <h2>Your Account</h2>
         <p>Email: <span id="user-email"></span></p>
-        <input type="text" id="user-username" class="input">
+        <input type="text" id="user-username" class="input" />
         <button id="update-username" class="button">Update Username</button>
         <button id="logout-btn" class="button danger">Log Out</button>
       </div>
