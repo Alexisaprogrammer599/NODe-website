@@ -352,3 +352,130 @@ body {
 .player-card .meta {
     flex:1;
 }
+/* --- NODe Website Patch Styles --- */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9ff;
+  color: #000;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: #0022ff;
+  color: white;
+  padding: 15px 0;
+}
+
+nav {
+  margin-top: 10px;
+}
+
+.tab-btn {
+  background-color: white;
+  border: 2px solid #0022ff;
+  color: #0022ff;
+  padding: 8px 14px;
+  margin: 3px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.2s;
+}
+
+.tab-btn.active,
+.tab-btn:hover {
+  background-color: #0022ff;
+  color: white;
+}
+
+.tab-section {
+  display: none;
+  padding: 25px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.tab-section.active {
+  display: block;
+}
+
+.button {
+  background-color: #0022ff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-top: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.button:hover {
+  background-color: #000ecc;
+}
+
+.auth-box {
+  margin: 25px auto;
+  max-width: 320px;
+  background: #fff;
+  border: 2px solid #0022ff;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.input {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+footer {
+  margin-top: 30px;
+  padding: 15px;
+  font-size: 0.9em;
+  color: #333;
+}
+
+.loader {
+  display: none;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #0022ff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin: 15px auto;
+  animation: spin 1s linear infinite;
+}
+
+#loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #0022ff;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
