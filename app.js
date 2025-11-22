@@ -1,105 +1,119 @@
-// Connect to Supabase
+// Supabase Connection
 const SUPABASE_URL = "https://rowzonuulxhiefncbwnp.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvd3pvbnV1bHhoaWVmbmNid25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg4MzMsImV4cCI6MjA3OTIxNDgzM30.UY_kvKySXU0ExfC8lU-m3QkF7wIAXW_YTg-VaKbWL3U"; // use your anon key here
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"; // replace with your anon key
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Tab navigation
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    document.querySelectorAll(".tab-section").forEach(tab => tab.classList.remove("active"));
     document.getElementById(btn.dataset.tab).classList.add("active");
   });
 });
 
-// Auth section references
+// Auth elements
 const signinForm = document.getElementById("signin-form");
 const signupForm = document.getElementById("signup-form");
 const accountInfo = document.getElementById("account-info");
+const loader = document.getElementById("users-loader");
+const overlay = document.getElementById("loading-overlay");
 
-// Switch between forms
-document.getElementById("show-signup").addEventListener("click", () => {
+// Helper functions
+function showLoader(show) {
+  overlay.style.display = show ? "flex" : "none";
+}
+
+// Switch forms
+document.getElementById("show-signup").onclick = () => {
   signinForm.style.display = "none";
   signupForm.style.display = "block";
-});
-document.getElementById("show-signin").addEventListener("click", () => {
+};
+document.getElementById("show-signin").onclick = () => {
   signupForm.style.display = "none";
   signinForm.style.display = "block";
-});
+};
 
-// Sign up
-document.getElementById("signup-btn").addEventListener("click", async () => {
-  const username = document.getElementById("signup-username").value;
-  const email = document.getElementById("signup-email").value;
-  const password = document.getElementById("signup-password").value;
+// Sign Up
+document.getElementById("signup-btn").onclick = async () => {
+  const username = document.getElementById("signup-username").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value.trim();
+  if (!username || !email || !password) return alert("Please fill all fields.");
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  showLoader(true);
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if (error) return alert(error.message);
 
   const user = data.user;
-  if (user) {
-    await supabase.from("profiles").insert([{ id: user.id, email, username }]);
-    alert("Account created!");
-    signupForm.style.display = "none";
-    signinForm.style.display = "block";
-  }
-});
+  await supabaseClient.from("profiles").insert([{ id: user.id, email, username }]);
+  showLoader(false);
+  alert("Account created! Please sign in.");
+  signupForm.style.display = "none";
+  signinForm.style.display = "block";
+};
 
-// Sign in
-document.getElementById("signin-btn").addEventListener("click", async () => {
-  const email = document.getElementById("signin-email").value;
-  const password = document.getElementById("signin-password").value;
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+// Sign In
+document.getElementById("signin-btn").onclick = async () => {
+  const email = document.getElementById("signin-email").value.trim();
+  const password = document.getElementById("signin-password").value.trim();
+  showLoader(true);
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  showLoader(false);
   if (error) return alert(error.message);
   loadAccount();
-});
+};
 
-// Load account info
+// Load Account
 async function loadAccount() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
-
   signinForm.style.display = "none";
   signupForm.style.display = "none";
   accountInfo.style.display = "block";
-
   document.getElementById("user-email").innerText = user.email;
-
-  const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  const { data: profile } = await supabaseClient.from("profiles").select("username").eq("id", user.id).single();
   if (profile) document.getElementById("user-username").value = profile.username;
 }
 
-// Update username
-document.getElementById("update-username").addEventListener("click", async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  const newUsername = document.getElementById("user-username").value;
-  await supabase.from("profiles").update({ username: newUsername }).eq("id", user.id);
+// Update Username
+document.getElementById("update-username").onclick = async () => {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  const newUsername = document.getElementById("user-username").value.trim();
+  if (!newUsername) return alert("Username cannot be empty.");
+  showLoader(true);
+  await supabaseClient.from("profiles").update({ username: newUsername }).eq("id", user.id);
+  showLoader(false);
   alert("Username updated!");
-});
+};
 
-// Load all users
+// Load Users
 async function loadUsers() {
-  const { data, error } = await supabase.from("profiles").select("username");
+  loader.style.display = "block";
+  const { data, error } = await supabaseClient.from("profiles").select("username");
+  loader.style.display = "none";
   const list = document.getElementById("users-list");
   list.innerHTML = "";
-  if (error) return list.innerHTML = "Failed to load users.";
-  data.forEach(user => {
+  if (error) return (list.innerHTML = "Failed to load users.");
+  data.forEach(u => {
     const li = document.createElement("li");
-    li.textContent = user.username || "Unnamed";
+    li.textContent = u.username || "Unnamed User";
     list.appendChild(li);
   });
 }
-
 loadUsers();
 
 // Logout
-document.getElementById("logout-btn").addEventListener("click", async () => {
-  await supabase.auth.signOut();
-  alert("Logged out!");
+document.getElementById("logout-btn").onclick = async () => {
+  await supabaseClient.auth.signOut();
   accountInfo.style.display = "none";
   signinForm.style.display = "block";
-});
+  alert("Logged out!");
+};
 
-// GitHub OAuth
-document.getElementById("github-login").addEventListener("click", () => {
+// GitHub login (still optional)
+document.getElementById("github-login").onclick = () => {
   window.location.href = "/api/auth.js";
-});
+};
