@@ -26,6 +26,18 @@ function showLoader(show) {
   overlay.style.display = show ? "flex" : "none";
 }
 
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
+});
+
+
+
 // Switch forms
 document.getElementById("show-signup").onclick = () => {
   signinForm.style.display = "none";
