@@ -1,270 +1,74 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-
-    <title>NODe Hub</title>
-
-    <!-- Styles -->
-    <link rel="stylesheet" href="game.css">
-
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.83.0/dist/umd/supabase.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NODe Platform</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="app.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
-
-<!-- ------------------------------------------------- -->
-<!-- TOP NAVIGATION -->
-<!-- ------------------------------------------------- -->
-
-<header class="topbar">
-    <div class="brand">
-        <div id="logo">NODe</div>
-        <div class="subtitle">Runtime 0.1 pre-alpha</div>
-    </div>
-
-
-    <nav class="nav">
-      <button class="nav-btn" data-open="home">Home</button>
-      <button class="nav-btn" data-open="browse">Browse</button>
-      <button class="nav-btn" data-open="players">Players</button>
-      <button class="nav-btn" data-open="create">Create</button>
-      <button class="nav-btn" data-open="play">Play</button>
-      <button class="nav-btn" data-open="account">Account</button>
+  <header>
+    <h1>NODe Platform</h1>
+    <nav>
+      <button class="tab-btn" data-tab="home">Home</button>
+      <button class="tab-btn" data-tab="users">Users</button>
+      <button class="tab-btn" data-tab="account">Account</button>
     </nav>
+  </header>
 
-
-
-
-    <div id="authArea" class="actions"></div>
-</header>
-
-
-
-<!-- ------------------------------------------------- -->
-<!-- PAGE CONTAINER -->
-<!-- ------------------------------------------------- -->
-
-<main class="page-container">
-
-
-    <!-- HOME PAGE -->
-    <section id="page-home" class="page">
-        <h1>Welcome to NODe Hub</h1>
-        <p>The platform to browse, play, and create NODe engine adventure games.</p>
+  <main>
+    <!-- Home -->
+    <section id="home" class="tab active">
+      <h2>Welcome to NODe</h2>
+      <p>Create and play adventure-based games with the NODe engine.</p>
+      <button id="github-login">Sign in with GitHub</button>
     </section>
 
+    <!-- Users -->
+    <section id="users" class="tab">
+      <h2>Users</h2>
+      <ul id="users-list">Loading...</ul>
+    </section>
 
-
-    <!-- BROWSE PAGE -->
-    <section id="page-browse" class="page" style="display:none;">
-        <h1>Browse Games</h1>
-
-        <div class="filter-bar">
-            <input id="searchInput" class="input" placeholder="Search games...">
-
-            <select id="ratingFilter" class="input">
-                <option value="">All ratings</option>
-                <option value="9+">9+</option>
-                <option value="12+">12+</option>
-                <option value="16+">16+</option>
-                <option value="18+">18+</option>
-            </select>
+    <!-- Account -->
+    <section id="account" class="tab">
+      <div id="auth-container">
+        <!-- Sign In -->
+        <div id="signin-form">
+          <h2>Sign In</h2>
+          <input type="email" id="signin-email" placeholder="Email" />
+          <input type="password" id="signin-password" placeholder="Password" />
+          <button id="signin-btn">Sign In</button>
+          <p>Don't have an account? <a id="show-signup">Sign Up</a></p>
         </div>
 
-        <!-- PLAYERS PAGE -->
-<section id="page-players" class="page" style="display:none;">
-  <h1>Players</h1>
-
-  <div class="filter-bar">
-    <input id="playerSearch" class="input" placeholder="Search players...">
-  </div>
-
-  <div id="playersGrid" class="players-grid"></div>
-</section>
-
-
-        <div id="browseGrid" class="grid"></div>
-
-        <div class="pagination">
-            <button id="prevPage" class="btn">Prev</button>
-            <span id="pageNumber" class="small"></span>
-            <button id="nextPage" class="btn">Next</button>
-        </div>
-    </section>
-
-
-
-    <!-- CREATE PAGE -->
-    <section id="page-create" class="page" style="display:none;">
-        <h1>Create a Game</h1>
-
-        <div id="createNotLogged" class="notice">Sign in to upload games.</div>
-
-        <div id="createPanel" style="display:none;">
-
-            <div class="form-row">
-                <label>Title</label>
-                <input id="gameTitle" class="input">
-            </div>
-
-            <div class="form-row">
-                <label>Description</label>
-                <textarea id="gameDesc" class="input"></textarea>
-            </div>
-
-            <div class="form-row">
-                <label>Tags (comma separated)</label>
-                <input id="gameTags" class="input">
-            </div>
-
-            <div class="form-row">
-                <label>Age Rating</label>
-                <select id="gameRating" class="input">
-                    <option value="9+">9+</option>
-                    <option value="12+" selected>12+</option>
-                    <option value="16+">16+</option>
-                    <option value="18+">18+</option>
-                </select>
-            </div>
-
-            <div class="form-row">
-                <label>Cover Image:</label>
-                <input id="coverInput" type="file" accept="image/*">
-            </div>
-
-            <div class="form-row">
-                <label>Screenshots (multiple allowed):</label>
-                <input id="screensInput" type="file" accept="image/*" multiple>
-            </div>
-
-            <div class="form-row">
-                <label>Game File (.nrf)</label>
-                <input id="nrfInput" type="file" accept=".nrf">
-            </div>
-
-            <button id="uploadGameBtn" class="btn primary">Upload Game</button>
-            <div id="uploadGameStatus" class="small"></div>
-
-        </div>
-    </section>
-
-
-
-    <!-- PLAY PAGE -->
-    <section id="page-play" class="page" style="display:none;">
-        <h1>Play</h1>
-        <p>Download the NODe Runtime to play games:</p>
-        <a class="btn primary" href="runtime.zip" download>Download Runtime</a>
-
-        <p style="margin-top:20px;">Want to create games?</p>
-        <a class="btn" href="sdk.zip" download>Download SDK</a>
-    </section>
-
-
-
-    <!-- ACCOUNT PAGE -->
-    <section id="page-account" class="page" style="display:none;">
-        <h1>Account</h1>
-
-        <div id="accountInfo"></div>
-
-        <div id="usernameArea" style="display:none;">
-            <h3>Username</h3>
-            <input id="usernameInput" class="input">
-            <button id="saveUsernameBtn" class="btn primary">Save Username</button>
-            <div id="usernameStatus" class="small"></div>
+        <!-- Sign Up -->
+        <div id="signup-form" style="display:none;">
+          <h2>Sign Up</h2>
+          <input type="text" id="signup-username" placeholder="Username" />
+          <input type="email" id="signup-email" placeholder="Email" />
+          <input type="password" id="signup-password" placeholder="Password" />
+          <button id="signup-btn">Create Account</button>
+          <p>Already have an account? <a id="show-signin">Sign In</a></p>
         </div>
 
-        <h3>Bio</h3>
-        <textarea id="bioInput" class="input" rows="4"></textarea>
-        <button id="saveBioBtn" class="btn primary">Save Bio</button>
-        <div id="bioStatus" class="small"></div>
-
-        <h3 style="margin-top:20px;">Avatar</h3>
-        <input id="avatarInput" type="file" accept="image/*">
-        <button id="uploadAvatarBtn" class="btn">Upload Avatar</button>
-        <div id="avatarStatus" class="small"></div>
-
+        <!-- Account Info -->
+        <div id="account-info" style="display:none;">
+          <h2>Your Account</h2>
+          <p>Email: <span id="user-email"></span></p>
+          <label>Username:</label>
+          <input type="text" id="user-username" />
+          <button id="update-username">Update Username</button>
+          <button id="logout-btn">Log Out</button>
+        </div>
+      </div>
     </section>
+  </main>
 
-
-
-</main>
-
-
-
-
-<!-- ------------------------------------------------- -->
-<!-- GAME DETAIL OVERLAY -->
-<!-- ------------------------------------------------- -->
-
-<div id="gameOverlay" class="overlay" style="display:none;">
-    <div class="overlay-content">
-
-        <button id="closeOverlay" class="btn">Close</button>
-
-        <div id="gameDetail"></div>
-
-        <h3>Screenshots</h3>
-        <div id="screenshotGallery" class="gallery"></div>
-
-        <h3>Versions</h3>
-        <div id="versionList"></div>
-
-        <h3>Comments</h3>
-        <div id="commentList"></div>
-
-        <textarea id="commentInput" class="input" placeholder="Write a comment..."></textarea>
-        <button id="postCommentBtn" class="btn primary">Post Comment</button>
-    </div>
-</div>
-
-
-
-<!-- ------------------------------------------------- -->
-<!-- DEVELOPER PROFILE OVERLAY -->
-<!-- ------------------------------------------------- -->
-
-<div id="profileOverlay" class="overlay" style="display:none;">
-    <div class="overlay-content">
-        <button id="closeProfile" class="btn">Close</button>
-        <div id="profileContent"></div>
-    </div>
-</div>
-
-
-
-<!-- ------------------------------------------------- -->
-<!-- AUTH MODAL -->
-<!-- ------------------------------------------------- -->
-
-<div id="authModal" class="overlay" style="display:none;">
-    <div class="auth-box">
-
-        <h2 id="authTitle">Sign In</h2>
-
-        <input id="authEmail" class="input" placeholder="Email">
-        <input id="authPass" class="input" type="password" placeholder="Password">
-        <input id="authUsername" class="input" placeholder="Username (only for sign up)">
-
-        <button id="authSubmit" class="btn primary">Submit</button>
-        <button id="authCancel" class="btn">Cancel</button>
-
-        <div id="authError" class="small error"></div>
-
-    </div>
-</div>
-
-
-
-<!-- ------------------------------------------------- -->
-<!-- MAIN SCRIPT -->
-<!-- ------------------------------------------------- -->
-
-<script src="app.js"></script>
-
+  <footer>
+    <p>© 2025 Opposing Studio. All Rights Reserved.</p>
+  </footer>
 </body>
 </html>
